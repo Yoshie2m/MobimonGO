@@ -128,12 +128,13 @@ flowchart LR
 | `Player` | `PlayerId`, `CumulativeSteps`, 獲得した称号の一覧 | `updateCumulativeSteps(steps)`, `grantTitle(title)` | 1人のユーザーにつき1つ(`PlayerId` は `WalkerId` と同じ値)。作成時に `Wallet`(残高 0)・`Inventory`(空)・`Mobidex`(空)を同じ保存単位で1つずつ作る。累計歩数は減らない(受け取った値が現在より小さければ無視する)。同じ称号は重複しない。所持モビモンの数に上限は設けない(DB 連携時に見直す)。 |
 | `Wallet` | `PlayerId`, `Energy`, `Point`, 処理済み `GrantId` の集合 | `receiveEnergy(grantId, energy)`, `receivePoints(grantId, point)`, `spendEnergy(energy)`, `spendPoints(point)` | 残高は負にならない。同じ `GrantId` は二度加算しない。日付が変わっても残高はリセットしない(持ち越し)。 |
 | `Encounter` | `EncounterId`, `PlayerId`, `MobimonSpeciesId`, 状態(出現中/捕獲済み/逃走) | `capture()`, `flee()` | 捕獲済み・逃走済みの出現は再度捕獲できない。 |
-| `OwnedMobimon` | `OwnedMobimonId`, `PlayerId`, `MobimonSpeciesId`, `Level`, `Experience` | `train(expMultiplier)`(経験値 100 × 倍率を加え、必要量に達したらレベルを上げる), `evolve(toSpeciesId)` | レベルは 1〜30(捕獲時は 1、Lv30 では経験値が増えない)。進化は、条件レベルに達していて、進化先が `MobimonSpecies` の進化先に含まれるときだけできる。 |
+| `OwnedMobimon` | `OwnedMobimonId`, `PlayerId`, `MobimonSpeciesId`, `Experience`(累計)。`Level` は累計経験値から決まる | `train(expMultiplier)`(経験値 100 × 倍率を加え、必要量に達したらレベルを上げる), `evolve(toSpeciesId)` | レベルは 1〜30(捕獲時は 1、Lv30 では経験値が増えない)。進化は、条件レベルに達していて、進化先が `MobimonSpecies` の進化先に含まれるときだけできる。 |
 | `Mobidex` | `PlayerId`, 登録済み `MobimonSpeciesId` の集合, 達成済みのコンプリート・節目 | `register(speciesId)`, `isCompleted(scope)`(scope: 事業分野 / 全体) | 同じ種は重複登録しない。同じコンプリート・節目は二度達成しない。 |
 | `MobimonSpecies` | `MobimonSpeciesId`, 名前, レア度, `EncounterCondition`, `BusinessField`(なしも可), 進化先(`MobimonSpeciesId` の一覧), 進化に必要なレベル | `canAppear(timeOfDay, cumulativeSteps)` | マスターデータ(参照専用)。すべての時間帯に、累計 0歩で解放されるコモンの種が1種以上ある(出現候補が空にならない)。 |
 | `Item` | `ItemId`, 名前, 価格(`Point`), `ItemEffect` | — | マスターデータ(参照専用)。 |
 | `Inventory` | `PlayerId`, `ItemId` ごとの個数, 使用中の効果(種別, 倍率, 残り回数) | `add(itemId, quantity)`, `use(itemId)`, `consumeEffect(種別)` | 個数は負にならず、1種類 99個を超えない。持っていないアイテムは使えない。同じ種別の効果が残っている間は同じ種別のアイテムを使えない(出現率アップと育成は同時に使える)。 |
 
+- 特別な節目(デンまるの初登録)は、どの事業分野にも属さない種の初登録として判定する。
 - 所持モビモンの一覧は `Player` に持たせず、`OwnedMobimon` を `PlayerId` で検索して得る(集約どうしはIDで参照し、捕獲のたびに2つの集約を更新しないため)。
 
 #### 値オブジェクト

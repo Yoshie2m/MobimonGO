@@ -89,67 +89,69 @@
 ## 4. Mobimon コンテキスト(Core)
 
 ### 値オブジェクト
-- [ ] `PlayerId`, `MobimonSpeciesId`, `OwnedMobimonId`, `EncounterId`, `ItemId`
-- [ ] `Level`(1〜30)
-- [ ] `Experience`(0 以上の整数)
-- [ ] `BusinessField`(事業分野 8分野。持たない種もある)
-- [ ] `Title`(称号)
-- [ ] `EncounterCost` / `TrainingCost`(どちらも 10エネルギー)
-- [ ] `Rarity`(4段階、1種あたりの重み 10 / 5 / 2 / 1)
-- [ ] `ItemEffect`(種別, 倍率, 持続回数)
-- [ ] `Energy`, `Point`(0 以上の数量。歩数リソース変換から受け取る)
-- [ ] `GrantId`(受け取った付与イベントのID)
+- [x] `PlayerId`, `MobimonSpeciesId`, `OwnedMobimonId`, `EncounterId`, `ItemId`
+- [x] `Level`(1〜30)
+- [x] `Experience`(0 以上の整数)
+- [x] `BusinessField`(事業分野 8分野。持たない種もある)
+- [x] `Title`(称号)
+- [x] `EncounterCost` / `TrainingCost`(どちらも 10エネルギー)
+- [x] `Rarity`(4段階、1種あたりの重み 10 / 5 / 2 / 1)
+- [x] `ItemEffect`(種別, 倍率, 持続回数)
+- [x] `Energy`, `Point`(0 以上の数量。歩数リソース変換から受け取る)
+- [x] `GrantId`(受け取った付与イベントのID)
 - [x] `TimeOfDay`(朝 5:00〜9:59 / 昼 10:00〜15:59 / 夕 16:00〜18:59 / 夜 19:00〜翌4:59)→ `src/mobimon/domain/TimeOfDay.ts`(境目のテストあり)
-- [ ] `CumulativeSteps`(0 以上の整数)
-- [ ] `EncounterCondition`(出現する時間帯の集合, 解放に必要な累計歩数)
+- [x] `CumulativeSteps`(0 以上の整数)
+- [x] `EncounterCondition`(出現する時間帯の集合, 解放に必要な累計歩数)
 
 ### 集約
-- [ ] `MobimonSpecies`(名前, レア度, `EncounterCondition`, `BusinessField`, 進化先, 進化に必要なレベル)と `canAppear(timeOfDay, cumulativeSteps)` — マスターデータ(参照専用)
+- [x] `MobimonSpecies`(名前, レア度, `EncounterCondition`, `BusinessField`, 進化先, 進化に必要なレベル)と `canAppear(timeOfDay, cumulativeSteps)` — マスターデータ(参照専用)
   - 不変条件: すべての時間帯に、累計 0歩で解放されるコモンの種が1種以上ある
-- [ ] `Player`(`PlayerId`, `CumulativeSteps`, 称号の一覧)と `updateCumulativeSteps()` / `grantTitle()`
+- [x] `Player`(`PlayerId`, `CumulativeSteps`, 称号の一覧)と `updateCumulativeSteps()` / `grantTitle()`
   - 不変条件: 1ユーザー1つ、累計歩数は減らない(小さい値を受け取ったら無視)、同じ称号は重複しない
-- [ ] 初回起動時にユーザーIDを発行し、`Walker` と `Player`・`Wallet`・`Inventory`・`Mobidex` をまとめて作るアプリケーションサービス
+- [x] 初回起動時にユーザーIDを発行し、`Walker` と `Player`・`Wallet`・`Inventory`・`Mobidex` をまとめて作るアプリケーションサービス → `MobimonService.registerPlayer()` と `src/composition.ts`
   - テスト観点: 同じユーザーで二重に作れない / 4つがそろって作られる / `WalkerId` と `PlayerId` が同じ値
-- [ ] プレイヤーの所持モビモン一覧を `OwnedMobimon` の `PlayerId` 検索で取得する
-- [ ] `Wallet`(`PlayerId`, `Energy`, `Point`, 処理済み `GrantId`)と `receiveEnergy()` / `receivePoints()` / `spendEnergy()` / `spendPoints()`
+- [x] プレイヤーの所持モビモン一覧を `OwnedMobimon` の `PlayerId` 検索で取得する
+- [x] `Wallet`(`PlayerId`, `Energy`, `Point`, 処理済み `GrantId`)と `receiveEnergy()` / `receivePoints()` / `spendEnergy()` / `spendPoints()`
   - 不変条件: 残高は負にならない、同じ `GrantId` は二度加算しない、日付が変わってもリセットしない(持ち越し)
-- [ ] `Encounter`(状態: 出現中/捕獲済み/逃走)と `capture()` / `flee()`
+- [x] `Encounter`(状態: 出現中/捕獲済み/逃走)と `capture()` / `flee()`
   - 不変条件: 捕獲済み・逃走済みの出現は再度捕獲できない
-- [ ] `OwnedMobimon`(`Level`, `Experience`)と `train(expMultiplier)` / `evolve(toSpeciesId)`
+- [x] `OwnedMobimon`(`Level`, `Experience`)と `train(expMultiplier)` / `evolve(toSpeciesId)`
   - 不変条件: レベルは 1〜30、進化は条件レベル(Lv10 / Lv20)に達していて進化先に含まれる種にだけできる
   - テスト観点: Lv1 で経験値 50 → Lv2 / Lv30 で経験値が増えない / Lv9 では進化できない / Lv10 で進化できる / 進化先以外の種には進化できない / ハイブリコは3つの分岐先から選べる
-- [ ] `Mobidex`(登録済み種の集合, 達成済みのコンプリート・節目)と `register(speciesId)` / `isCompleted(scope)`
+- [x] `Mobidex`(登録済み種の集合, 達成済みのコンプリート・節目)と `register(speciesId)` / `isCompleted(scope)`
   - 不変条件: 同じ種は重複登録しない、同じコンプリート・節目は二度達成しない
   - テスト観点: 事業分野の超レア以外がそろうとその事業分野のコンプリート / 超レアがなくても事業分野コンプリートになる / 151種そろうと全体コンプリート / 節目 10 / 30 / 50 / 100種
-- [ ] `Item`(名前, 価格, `ItemEffect`)— マスターデータ(参照専用)
-- [ ] `Inventory`(`ItemId` ごとの個数, 使用中の効果と残り回数)と `add()` / `use()` / `consumeEffect()`
+- [x] `Item`(名前, 価格, `ItemEffect`)— マスターデータ(参照専用)
+- [x] `Inventory`(`ItemId` ごとの個数, 使用中の効果と残り回数)と `add()` / `use()` / `consumeEffect()`
   - 不変条件: 個数は負にならず 99個を超えない、持っていないアイテムは使えない、同じ種別の効果が残っている間は同じ種別を使えない
-- [ ] `OwnedMobimon.train()` に育成アイテムの経験値倍率を適用する
+- [x] `OwnedMobimon.train()` に育成アイテムの経験値倍率を適用する
 
 ### ドメインサービス
-- [ ] `EncounterGenerator` — 出現条件・レア度・消費リソースから出現させるモビモン種を決定する(**差別化の中心。最優先で設計・テストする**)。時間帯・累計歩数で候補を絞り、各候補にレア度の重み(10 / 5 / 2 / 1)を付け(出現率アップ中はレア・超レアに倍率)、重みに比例して1種を抽選する
+- [x] `EncounterGenerator` — 出現条件・レア度・消費リソースから出現させるモビモン種を決定する(**差別化の中心。最優先で設計・テストする**)。時間帯・累計歩数で候補を絞り、各候補にレア度の重み(10 / 5 / 2 / 1)を付け(出現率アップ中はレア・超レアに倍率)、重みに比例して1種を抽選する
   - テスト観点(出現条件): 時間帯の境目(4:59 は夜 / 5:00 は朝、9:59 / 10:00、15:59 / 16:00、18:59 / 19:00)、累計歩数がちょうど閾値で解放される
   - テスト観点(抽選): 固定の候補セットで重みどおりの比率になる(例: コモン1種・レア1種なら通常 10:2、×2 で 10:4、×3 で 10:6)、出現ごとに残り回数が1減る、残り0で効果が切れる
-- [ ] `ItemPurchaseService` — `Wallet` からポイントを消費して `Inventory` にアイテムを追加する(ポイント不足なら購入不可)
+- [x] `ItemPurchaseService` — `Wallet` からポイントを消費して `Inventory` にアイテムを追加する(ポイント不足なら購入不可)
 
 ### ドメインイベント
-- [ ] `MobimonEncountered`
-- [ ] `MobimonCaptured`(購読者: `Mobidex` への図鑑登録)
-- [ ] `MobimonTrained`
-- [ ] `MobimonEvolved`(購読者: `Mobidex` への図鑑登録)
-- [ ] `MobidexCompleted`(範囲: 事業分野 / 全体。購読者: 報酬付与)
-- [ ] `MobidexMilestoneReached`(登録数の節目・デンまるの初登録。購読者: 報酬付与)
+- [x] `MobimonEncountered`
+- [x] `MobimonCaptured`(購読者: `Mobidex` への図鑑登録)
+- [x] `MobimonTrained`
+- [x] `MobimonEvolved`(購読者: `Mobidex` への図鑑登録)
+- [x] `MobidexCompleted`(範囲: 事業分野 / 全体。購読者: 報酬付与)
+- [x] `MobidexMilestoneReached`(登録数の節目・デンまるの初登録。購読者: 報酬付与)
   - テスト観点: デンまるを初めて登録すると称号「Dワールドの覇者」が付与される / 2体目を捕まえても二度付与されない
-- [ ] `ItemPurchased`
-- [ ] `ItemUsed`
+- [x] `ItemPurchased`
+- [x] `ItemUsed`
 
 ### マスターデータ
 - [x] 初期のモビモン種(`MobimonSpecies`)一覧を作成する → `MOBIMON_LIST.md`(151種。各時間帯に累計 0歩で出るコモンあり)
 - [x] 種リストを事業分野・主力製品をモチーフに作り直す → `MOBIMON_LIST.md`(151種・79系統を維持)
-- [ ] 事業分野・製品をモチーフにしたモビモンを社外に公開してよいか、権利を持つ部署に確認する
+- [x] 事業分野・製品をモチーフにしたモビモンを社外に公開してよいか、権利を持つ部署に確認する → 問題なし(2026-09-28)
 - [x] `MOBIMON_LIST.md` をレビューし、名前・レア度・出現時間帯・解放歩数を確定する → 確定版
-- [ ] リリース前に、モビモンの名前・デザインが既存作品の権利を侵害していないか確認する
-- [ ] 初期のアイテム(`Item`)一覧を作成する(おさんぽアロマ 30pt / アロマ+ 80pt / げんきフード 20pt / フード+ 70pt)
+- [x] リリース前に、モビモンの名前・デザインが既存作品の権利を侵害していないか確認する → 問題なし(2026-09-28)
+- [x] 初期のアイテム(`Item`)一覧を作成する(おさんぽアロマ 30pt / アロマ+ 80pt / げんきフード 20pt / フード+ 70pt)→ `src/mobimon/masterData/items.ts`
+- [x] モビモン種のマスターデータを `MOBIMON_LIST.md` から読み込む → `src/mobimon/masterData/species.ts`(md を唯一の元データとし、起動時に表を解釈する)
+- [x] 称号・報酬のマスターデータ → `src/mobimon/masterData/titles.ts` / `rewards.ts`
 
 ## 5. コンテキスト間連携
 
