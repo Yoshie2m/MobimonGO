@@ -19,11 +19,18 @@ npm run dev          # 開発サーバーの起動
 npm run build        # 型チェック(tsc -b)と本番用ビルド
 npm test             # テストの実行(Vitest)
 npm run test:watch   # テストの監視実行
+npm run test:ocr     # 実際の文字認識で画面キャプチャのサンプルを読み取るテスト(初回は通信が必要、*.ocr.test.ts)
 npx vitest run src/mobimon/domain/TimeOfDay.test.ts   # 1ファイルだけテストする
 npm run lint         # ESLint(依存の向きのルールを含む)
 npm run format       # Prettier で整形(*.md は対象外)
 npm run format:check # 整形の確認のみ
 ```
+
+## 実装の構成
+
+- `src/composition.ts` がアプリの組み立て(依存の注入)を行い、`ui/` にはユースケースだけを渡す。ユーザーの ID は初回起動時に `mobimongo:userId` に発行し、`WalkerId`(将来は `PlayerId` も)に同じ値を使う。
+- 各コンテキストの状態は localStorage の1つのキー(例: `mobimongo:stepResource`)に版番号付きでまとめて保存する(`src/shared/VersionedStorage.ts`)。
+- tsconfig の `erasableSyntaxOnly` が有効なため、コンストラクタ引数でのプロパティ宣言(`constructor(private readonly x: X)`)や enum は使えない。フィールドは明示的に宣言する。
 
 ## 依存の向きのルール
 

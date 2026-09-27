@@ -1,0 +1,83 @@
+:root {
+  font-family: system-ui, sans-serif;
+  color: #1f2933;
+  background: #f7f9fa;
+}
+
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.status {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 16px;
+}
+
+.status dd {
+  margin: 0;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.tabs [aria-selected='true'] {
+  font-weight: bold;
+  border-bottom: 2px solid #0a9cc2;
+}
+
+.manual,
+.capture {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 4px 8px;
+  border-bottom: 1px solid #d9e2ec;
+  vertical-align: top;
+}
+
+.error {
+  color: #c62828;
+  margin: 4px 0;
+}
+
+.note,
+.hint {
+  color: #52606d;
+  margin: 4px 0;
+}
+
+.primary {
+  background: #0a9cc2;
+  color: white;
+  border: none;
+  padding: 8px 24px;
+  border-radius: 999px;
+}
+
+.primary:disabled {
+  background: #9fb3c8;
+}

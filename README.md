@@ -2,6 +2,19 @@
 ヘルスケアのアプリとして日々の歩数情報を利用して、モビモンを収集する
 
 
+## 使い方
+
+Node.js v26 が必要。
+
+```bash
+npm install     # 依存パッケージのインストール(最初に1回)
+npm run dev     # 開発サーバーを起動し、表示された URL(http://localhost:5173 など)をブラウザで開く
+npm test        # テストの実行
+npm run lint    # コードの検査
+npm run build   # 本番用ビルド(dist/ に出力)
+```
+
+
 ## フォルダ構成
 
 ```
@@ -55,4 +68,4 @@ tests/
 | テスト | Vitest + React Testing Library |
 | lint / formatter | ESLint(typescript-eslint、React Hooks) / Prettier |
 | 永続化 | localStorage(コンテキストごとに1つのキーにまとめて保存。DB 連携時はリポジトリの実装を差し替える) |
-| 文字認識(画面キャプチャの取り込み) | Tesseract.js(取り込み機能の実装時に導入) |
+| 文字認識(画面キャプチャの取り込み) | Tesseract.js(英語の学習データ。画像はブラウザ内で読み取り、初回に学習データだけを取得する) |
