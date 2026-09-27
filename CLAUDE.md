@@ -4,7 +4,34 @@
 
 ## プロジェクトの状態
 
-このリポジトリは実装前の段階です。現時点では、プロダクトコンセプトとドメイン分解を説明する `README.md` と、ユビキタス言語・コンテキストマップ・ドメインモデルを定義した `domain_design.md` のみが存在します。ドメイン用語やモデルを扱う際は `domain_design.md` の定義に従い、変更があれば同ファイルも更新してください。ソースコード、ビルドシステム、パッケージマニフェスト、テストスイートはまだ存在せず、gitリポジトリにもなっていません。ビルド/lint/テストのコマンドは、そうした構成が整うまでは記載できません。実際にビルドシステムが導入された際は、想定でスタックを決めつけず、このファイルに実際のコマンドを追記してください。
+プロジェクト基盤(git、Vite + React + TypeScript、Vitest、ESLint、Prettier)を導入済みで、ドメインの実装はこれから始める段階です。フォルダ構成と選定技術は `README.md` を参照してください。
+
+- ドメイン用語やモデルを扱う際は `domain_design.md` の定義に従い、変更があれば同ファイルも更新してください。
+- モビモン種のマスターデータは `MOBIMON_LIST.md`(確定版)に従ってください。
+- タスクは `TASKS.md`、承認待ちの提案は `PROPOSAL.md` にあります。承認されて反映した提案は `PROPOSAL.md` から削除します。
+- `tmp/` は git の管理対象外です(既存作品のデータや社内資料を含むため)。テストで使う画像は `tests/fixtures/` に置きます。
+
+## コマンド
+
+```bash
+npm install          # 依存パッケージのインストール
+npm run dev          # 開発サーバーの起動
+npm run build        # 型チェック(tsc -b)と本番用ビルド
+npm test             # テストの実行(Vitest)
+npm run test:watch   # テストの監視実行
+npx vitest run src/mobimon/domain/TimeOfDay.test.ts   # 1ファイルだけテストする
+npm run lint         # ESLint(依存の向きのルールを含む)
+npm run format       # Prettier で整形(*.md は対象外)
+npm run format:check # 整形の確認のみ
+```
+
+## 依存の向きのルール
+
+`eslint.config.js` の `no-restricted-imports` で検査しています。違反すると `npm run lint` がエラーになります。
+
+- `src/mobimon/` と `src/stepResource/` はお互いを import しない。やり取りは `src/publishedLanguage/` のイベント型だけで行う。
+- `domain/` は `application/`・`infrastructure/`・`acl/`・`ui/`・React を import しない。
+- `src/ui/` は各コンテキストの `application/` だけを呼ぶ。
 
 ## プロダクトコンセプト
 
