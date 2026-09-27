@@ -1,7 +1,8 @@
 import { MobimonService } from './mobimon/application/MobimonService.ts'
+import type { MobimonUseCases } from './mobimon/application/mobimonUseCases.ts'
 import { LocalStorageMobimonRepository } from './mobimon/infrastructure/LocalStorageMobimonRepository.ts'
 import type { StepResourceEvent } from './publishedLanguage/stepResourceEvents.ts'
-import { systemClock } from './shared/Clock.ts'
+import { systemClock, type Clock } from './shared/Clock.ts'
 import { EventBus } from './shared/EventBus.ts'
 import { randomIdGenerator, type IdGenerator } from './shared/IdGenerator.ts'
 import type { KeyValueStorage } from './shared/VersionedStorage.ts'
@@ -11,23 +12,39 @@ import { LocalStorageStepResourceRepository } from './stepResource/infrastructur
 
 const USER_ID_KEY = 'mobimongo:userId'
 
+export interface AppOptions {
+  storage?: KeyValueStorage
+  clock?: Clock
+  ids?: IdGenerator
+  random?: () => number
+}
+
 /**
  * アプリの組み立て(依存の注入)。ui/ はここで作ったユースケースだけを受け取る。
  * ユーザーの ID は初回起動時に1つ発行し、WalkerId と PlayerId に同じ値を使う。
  */
-export function createApp(storage: KeyValueStorage = window.localStorage) {
+export function createApp({
+  storage = window.localStorage,
+  clock = systemClock,
+  ids = randomIdGenerator,
+  random = Math.random,
+}: AppOptions = {}) {
   const events = new EventBus<StepResourceEvent>()
   const stepResource = new StepResourceService(
     new LocalStorageStepResourceRepository(storage),
-    systemClock,
-    randomIdGenerator,
+    clock,
+    ids,
     events,
   )
+  const mobimon = new MobimonService(new LocalStorageMobimonRepository(storage), clock, ids, random)
 
-  const mobimon = new MobimonService(new LocalStorageMobimonRepository(storage))
+  // 歩数リソース変換 → Mobimon は Published Language のイベントだけでつながる
+  for (const type of ['EnergyGranted', 'PointsGranted', 'CumulativeStepsUpdated'] as const) {
+    events.subscribe(type, (event) => mobimon.handleStepResourceEvent(event))
+  }
 
   // 同じユーザーの ID で、Walker と Player(Wallet・Inventory・Mobidex を含む)を作る
-  const userId = ensureUserId(storage, randomIdGenerator)
+  const userId = ensureUserId(storage, ids)
   stepResource.registerWalker(userId)
   mobimon.registerPlayer(userId)
 
@@ -42,7 +59,21 @@ export function createApp(storage: KeyValueStorage = window.localStorage) {
     },
   }
 
-  return { events, stepImport, mobimon, userId }
+  const game: MobimonUseCases = {
+    getSummary: () => mobimon.getSummary(userId),
+    listOwnedMobimon: () => mobimon.listOwnedMobimon(userId),
+    encounter: () => mobimon.encounter(userId),
+    capture: (encounterId) => mobimon.capture(userId, encounterId),
+    flee: (encounterId) => mobimon.flee(userId, encounterId),
+    train: (ownedId) => mobimon.train(userId, ownedId),
+    evolve: (ownedId, toSpeciesId) => mobimon.evolve(userId, ownedId, toSpeciesId),
+    listShop: () => mobimon.listShop(userId),
+    purchase: (itemId, quantity) => mobimon.purchase(userId, itemId, quantity),
+    useItem: (itemId) => mobimon.useItem(userId, itemId),
+    getMobidex: () => mobimon.getMobidex(userId),
+  }
+
+  return { events, stepImport, game, userId }
 }
 
 function ensureUserId(storage: KeyValueStorage, ids: IdGenerator): string {

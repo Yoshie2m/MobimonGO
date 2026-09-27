@@ -24,11 +24,14 @@ npx vitest run src/mobimon/domain/TimeOfDay.test.ts   # 1ファイルだけテ�
 npm run lint         # ESLint(依存の向きのルールを含む)
 npm run format       # Prettier で整形(*.md は対象外)
 npm run format:check # 整形の確認のみ
+npm run design:tokens # デザインシステムの tokens.json から tokens.css を生成
 ```
 
 ## 実装の構成
 
 - `src/composition.ts` がアプリの組み立て(依存の注入)を行い、`ui/` にはユースケースだけを渡す。ユーザーの ID は初回起動時に `mobimongo:userId` に発行し、`WalkerId`(将来は `PlayerId` も)に同じ値を使う。
+- 歩数リソース変換 → Mobimon は `composition.ts` で Published Language のイベント(`EnergyGranted` / `PointsGranted` / `CumulativeStepsUpdated`)を購読してつなぐ。
+- 画面の見た目はデザインシステム「Mobimon」(`src/ui/design-system/`)に従う。色・余白・角丸・影はトークン(CSS 変数)だけを使い、文章は丁寧語・絵文字なし、増減は矢印や言葉を添える。`tokens.css` は生成物なので直接編集しない。
 - 各コンテキストの状態は localStorage の1つのキー(例: `mobimongo:stepResource`)に版番号付きでまとめて保存する(`src/shared/VersionedStorage.ts`)。
 - tsconfig の `erasableSyntaxOnly` が有効なため、コンストラクタ引数でのプロパティ宣言(`constructor(private readonly x: X)`)や enum は使えない。フィールドは明示的に宣言する。
 

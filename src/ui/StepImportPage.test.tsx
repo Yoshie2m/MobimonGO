@@ -8,16 +8,12 @@ import type {
   StepSource,
 } from '../stepResource/application/stepImport.ts'
 import StepImportPage from './StepImportPage.tsx'
+import { fakeStatus } from './testFakes.ts'
 
 function fakeUseCases(recognized?: StepCalendarResult) {
   const calls: { readings: readonly StepReading[]; source: StepSource }[] = []
   const useCases: StepImportUseCases = {
-    getStatus: () => ({
-      startDate: '2026-09-04',
-      today: '2026-09-19',
-      todaySteps: 0,
-      cumulativeSteps: 0,
-    }),
+    getStatus: () => fakeStatus(),
     importSteps: (readings, source): StepImportResult => {
       calls.push({ readings, source })
       return {

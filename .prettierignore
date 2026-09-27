@@ -3,3 +3,6 @@ coverage
 tmp
 package-lock.json
 *.md
+src/ui/design-system/tokens.css
+src/ui/design-system/bundle.css
+src/ui/design-system/tokens.json

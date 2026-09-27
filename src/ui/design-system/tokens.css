@@ -1,0 +1,71 @@
+/* このファイルは scripts/generate-design-tokens.mjs が tokens.json から生成する。直接編集しない。 */
+:root {
+  --surface-100: #f9f1e7; /* Page background. */
+  --surface-200: #fffcf7; /* Card and panel background. */
+  --border: #ead9c5; /* Card borders and dividers on surface-100 and surface-200. */
+  --ink: #3a2f22; /* Primary text on surface-100 and surface-200. */
+  --ink-muted: #7a6a57; /* Secondary text, captions and meta info on surface-100 and surface-200. */
+  --accent: #d1953f; /* Primary buttons, active navigation background, progress rings and icons 24px or larger. Too light for small text on surface-100/surface-200 — for inline emphasis pair ink text with an accent icon or underline instead. */
+  --on-accent: #3a2f22; /* Text and icons on accent fills (primary buttons, active tab pills). */
+  --accent-soft: #f6e7d1; /* Tag and chip backgrounds, selected-row tint; pair with ink text (accent itself is too light to read here). */
+  --success: #2f7d6f; /* Positive deltas and status text on surface-200; always paired with an up-arrow or word, never color alone. */
+  --danger: #b8503a; /* Negative deltas, alerts and destructive actions on surface-200; always paired with a down-arrow or word, never color alone. */
+  --space-1: 4px; /* Icon-to-label gaps, tight inline spacing. */
+  --space-2: 8px; /* Gaps between stacked elements within a card. */
+  --space-3: 16px; /* Gaps between cards in a dashboard grid. */
+  --space-4: 24px; /* Card padding; gutters between dashboard columns. */
+  --radius-sm: 8px; /* Buttons, tags and form fields. */
+  --radius-md: 14px; /* Dashboard cards and panels. */
+  --radius-lg: 20px; /* Modals and bottom sheets. */
+  --shadow-card: 0 1px 2px rgba(58,47,34,0.05), 0 6px 16px rgba(58,47,34,0.08); /* Resting elevation for dashboard cards. */
+  --shadow-raised: 0 2px 4px rgba(58,47,34,0.06), 0 12px 28px rgba(58,47,34,0.11); /* Hover/focus elevation for cards and modals. */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Segoe UI', sans-serif;
+}
+
+/* Large stat numbers in dashboard cards. */
+.display {
+  font-family: var(--font-sans);
+  font-size: 32px;
+  line-height: 40px;
+  font-weight: 600;
+}
+
+/* Card and section titles. */
+.heading {
+  font-family: var(--font-sans);
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 600;
+}
+
+/* Default body copy. */
+.body {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 400;
+}
+
+/* Emphasis within body copy. */
+.body-strong {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 600;
+}
+
+/* Meta text, timestamps and helper text. */
+.caption {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 400;
+}
+
+/* Buttons, tags and form labels. */
+.label {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 16px;
+  font-weight: 600;
+}

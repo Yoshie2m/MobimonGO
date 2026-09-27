@@ -15,7 +15,8 @@
     "test:ocr": "OCR=1 vitest run ocr",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "design:tokens": "node scripts/generate-design-tokens.mjs"
   },
   "dependencies": {
     "react": "^19.3.0",

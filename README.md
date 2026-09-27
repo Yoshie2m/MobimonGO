@@ -32,6 +32,10 @@ src/
   publishedLanguage/    # コンテキスト間でやり取りするイベントの型
   shared/               # 両コンテキストが使う基盤(イベントバス、ID の発行、時計)
   ui/                   # React の画面・コンポーネント
+    design-system/      #   デザインシステム「Mobimon」(Claude Design)の取り込み
+    components/         #   デザインシステムのトークンで作ったアプリ用の部品
+    pages/              #   ホーム・さがす・なかま・ショップ・図鑑の画面
+  composition.ts        # アプリの組み立て(依存の注入、コンテキスト間のイベントの接続)
 tests/
   setup.ts              # テストの共通設定
   fixtures/             # テスト用のデータ(画面キャプチャのサンプル画像など)
@@ -67,5 +71,6 @@ tests/
 | パッケージマネージャ | npm(Node.js v26。`.nvmrc` で固定) |
 | テスト | Vitest + React Testing Library |
 | lint / formatter | ESLint(typescript-eslint、React Hooks) / Prettier |
+| デザインシステム | Claude Design で作成した「Mobimon」(`src/ui/design-system/README.md`) |
 | 永続化 | localStorage(コンテキストごとに1つのキーにまとめて保存。DB 連携時はリポジトリの実装を差し替える) |
 | 文字認識(画面キャプチャの取り込み) | Tesseract.js(英語の学習データ。画像はブラウザ内で読み取り、初回に学習データだけを取得する) |

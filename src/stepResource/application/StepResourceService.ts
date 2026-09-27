@@ -7,6 +7,7 @@ import { localDateOf, parseLocalDate, type LocalDate } from '../../shared/LocalD
 import { stepValueError, type StepReading } from '../acl/StepReading.ts'
 import { sumCumulativeSteps } from '../domain/CumulativeStepsCalculator.ts'
 import { DailyGrant } from '../domain/DailyGrant.ts'
+import { StepGoal } from '../domain/PointAwardRule.ts'
 import type { StepsRecorded } from '../domain/events.ts'
 import { grantId } from '../domain/GrantId.ts'
 import { StepRecord, type StepSource } from '../domain/StepRecord.ts'
@@ -43,6 +44,11 @@ export interface WalkerStatus {
   today: string
   todaySteps: number
   cumulativeSteps: number
+  /** 目標歩数(全ユーザー共通)。 */
+  stepGoal: number
+  /** 今日の歩数に対して付与済みのエネルギー・ポイント。 */
+  todayGrantedEnergy: number
+  todayGrantedPoints: number
 }
 
 /** 歩数リソース変換コンテキストのユースケース。 */
@@ -77,11 +83,15 @@ export class StepResourceService {
     const walker = this.findWalker(state, toWalkerId(id))
     const records = state.stepRecords.filter((r) => r.walkerId === walker.id)
     const today = this.today()
+    const grant = state.dailyGrants.find((g) => g.walkerId === walker.id && g.date === today)
     return {
       startDate: walker.startDate,
       today,
       todaySteps: records.find((r) => r.date === today)?.steps ?? 0,
       cumulativeSteps: sumCumulativeSteps(records),
+      stepGoal: StepGoal,
+      todayGrantedEnergy: grant?.grantedEnergy ?? 0,
+      todayGrantedPoints: grant?.grantedPoints ?? 0,
     }
   }
 
