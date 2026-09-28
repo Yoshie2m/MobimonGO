@@ -21,6 +21,10 @@ npm test             # テストの実行(Vitest)
 npm run test:watch   # テストの監視実行
 npm run test:ocr     # 実際の文字認識で画面キャプチャのサンプルを読み取るテスト(初回は通信が必要、*.ocr.test.ts)
 npx vitest run src/mobimon/domain/TimeOfDay.test.ts   # 1ファイルだけテストする
+npm run e2e          # 画面の自動テスト(Playwright。本番用のビルドを Chromium で動かす)
+npm run e2e:ui       # 画面で1件ずつ確かめながら E2E を実行
+npm run e2e:ocr      # 画面キャプチャの読み取りの E2E(@ocr。CDN から学習データを取得する)
+npx playwright test e2e/play.spec.ts   # E2E を1ファイルだけ実行する
 npm run lint         # ESLint(依存の向きのルールを含む)
 npm run format       # Prettier で整形(*.md は対象外)
 npm run format:check # 整形の確認のみ
@@ -32,9 +36,19 @@ npm run design:tokens # デザインシステムの tokens.json から tokens.cs
 GitHub Actions(`.github/workflows/`)で、次を自動で確かめている。push する前にも、手元で同じコマンドが通ることを確かめること。
 
 - `ci.yml`(`main` への push とすべての Pull Request): `npm ci` → `npm run format:check` → `npm run lint` → `npm test` → `npm run build` → `tokens.css` が `tokens.json` から生成したものと一致するか(食い違ったら `npm run design:tokens` を実行してコミットする)。
-- `ocr.yml`(画面キャプチャの読み取りに関わるファイルの変更時・毎週月曜・手動): `npm run test:ocr`。
+- `ci.yml` の E2E のジョブ(チェックのあと): `npm run e2e`。失敗したら、Actions の実行結果から `playwright-report`(報告と、失敗した場面の画面・操作の記録)をダウンロードし、`npx playwright show-trace <trace.zip>` で原因を追う。
+- `ocr.yml`(画面キャプチャの読み取りに関わるファイルの変更時・毎週月曜・手動): `npm run test:ocr` と `npm run e2e:ocr`。
 - `main` ブランチの保護は当面入れていない(直接 push し、CI の結果は通知で確かめる)。複数人で開発するようになったら、Pull Request を経由する運用に切り替えて保護を有効にする。
 - Dependabot(`.github/dependabot.yml`)が、毎週月曜に npm パッケージと GitHub Actions の更新を Pull Request で届ける(マイナー・パッチの更新は1つにまとめる)。CI が通っていることを確かめてから取り込む。メジャーの更新は変更内容(破壊的な変更)を読み、必要なら手元で `npm test` と動作確認をしてから取り込む。
+
+## 画面の自動テスト(E2E)
+
+`e2e/` に Playwright のテストを置く(Vitest の対象外)。本番用のビルドを `vite preview` で配信し、Chromium で通しに動かす。
+
+- 各テストの最初に `e2e/fixtures.ts` の `prepare(page, …)` を呼ぶ。日時を 2026-09-28 12:00(日本時間、時間帯は昼)に固定し、必要なら乱数の固定(`seededRandom`)と保存データの事前投入(`seed`、例: `walkerStartingOn('2026-09-01')`)を行う。
+- 画面の要素は、ボタン名・見出し・ラベルなど利用者に見える名前で探す。どのモビモンが出ても成り立つ確認を基本にする。
+- 通信が必要な場面(画面キャプチャの読み取り)はテスト名に `@ocr` を付ける。普段の `npm run e2e` からは外れ、`npm run e2e:ocr` と `ocr.yml` で実行される。
+- 保存データの見本(`tests/fixtures/storage/`)を追加すると、`e2e/storage.spec.ts` がその版でも起動できることを自動で確かめる。
 
 ## 実装の構成
 

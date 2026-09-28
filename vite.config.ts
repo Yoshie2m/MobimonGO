@@ -9,6 +9,7 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./tests/setup.ts'],
     // 実際に文字認識を行うテスト(通信が必要で遅い)は `npm run test:ocr` で別に実行する
-    exclude: process.env.OCR ? ['**/node_modules/**'] : ['**/node_modules/**', '**/*.ocr.test.ts'],
+    // e2e/ は Playwright のテスト(npm run e2e)なので、Vitest の対象から外す
+    exclude: ['**/node_modules/**', 'e2e/**', ...(process.env.OCR ? [] : ['**/*.ocr.test.ts'])],
   },
 })

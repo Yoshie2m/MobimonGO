@@ -6,3 +6,6 @@ package-lock.json
 src/ui/design-system/tokens.css
 src/ui/design-system/bundle.css
 src/ui/design-system/tokens.json
+playwright-report
+test-results
+blob-report

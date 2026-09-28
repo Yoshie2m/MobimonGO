@@ -13,6 +13,7 @@ Node.js v26 が必要。
 npm install     # 依存パッケージのインストール(最初に1回)
 npm run dev     # 開発サーバーを起動し、表示された URL(http://localhost:5173 など)をブラウザで開く
 npm test        # テストの実行
+npm run e2e     # 画面の自動テスト(本番用のビルドを Chromium で通しに動かす。初回は npx playwright install --only-shell chromium)
 npm run lint    # コードの検査
 npm run build   # 本番用ビルド(dist/ に出力)
 ```

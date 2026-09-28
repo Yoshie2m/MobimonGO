@@ -5,3 +5,6 @@ coverage/
 tmp/
 *.local
 *.swp
+playwright-report/
+test-results/
+blob-report/
