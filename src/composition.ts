@@ -1,3 +1,4 @@
+import { loadOrCreateUserId } from './appStorage.ts'
 import { MobimonService } from './mobimon/application/MobimonService.ts'
 import type { MobimonUseCases } from './mobimon/application/mobimonUseCases.ts'
 import { LocalStorageMobimonRepository } from './mobimon/infrastructure/LocalStorageMobimonRepository.ts'
@@ -9,8 +10,6 @@ import type { KeyValueStorage } from './shared/VersionedStorage.ts'
 import type { StepImportUseCases } from './stepResource/application/stepImport.ts'
 import { StepResourceService } from './stepResource/application/StepResourceService.ts'
 import { LocalStorageStepResourceRepository } from './stepResource/infrastructure/LocalStorageStepResourceRepository.ts'
-
-const USER_ID_KEY = 'mobimongo:userId'
 
 export interface AppOptions {
   storage?: KeyValueStorage
@@ -44,7 +43,7 @@ export function createApp({
   }
 
   // 同じユーザーの ID で、Walker と Player(Wallet・Inventory・Mobidex を含む)を作る
-  const userId = ensureUserId(storage, ids)
+  const userId = loadOrCreateUserId(storage, ids)
   stepResource.registerWalker(userId)
   mobimon.registerPlayer(userId)
 
@@ -74,12 +73,4 @@ export function createApp({
   }
 
   return { events, stepImport, game, userId }
-}
-
-function ensureUserId(storage: KeyValueStorage, ids: IdGenerator): string {
-  const existing = storage.getItem(USER_ID_KEY)
-  if (existing) return existing
-  const id = ids.next()
-  storage.setItem(USER_ID_KEY, id)
-  return id
 }

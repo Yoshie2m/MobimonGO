@@ -20,6 +20,11 @@ export interface MobimonSpecies {
   /** 進化に必要なレベル(系統の1段階目は 10、2段階目は 20)。進化しない種は null。 */
   readonly evolutionLevel: number | null
   readonly description: string
+  /**
+   * 出現しない種(引退した種)。ID と図鑑の登録・所持モビモンは残し、出現候補にだけ入らない。
+   * 図鑑の総数・コンプリートの範囲には含める。
+   */
+  readonly retired: boolean
 }
 
 /** 時間帯と累計歩数から、その種が出現候補になるか。 */
@@ -28,5 +33,9 @@ export function canAppear(
   timeOfDay: TimeOfDay,
   steps: CumulativeSteps,
 ): boolean {
-  return species.condition.timesOfDay.has(timeOfDay) && isUnlocked(species.condition, steps)
+  return (
+    !species.retired &&
+    species.condition.timesOfDay.has(timeOfDay) &&
+    isUnlocked(species.condition, steps)
+  )
 }

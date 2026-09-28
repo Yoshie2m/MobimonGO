@@ -137,6 +137,7 @@ describe('MobidexPage', () => {
             businessField: 'ホーム',
             unlockSteps: 150_000,
             unlocked: false,
+            retired: false,
             timesOfDay: ['朝'],
           },
         ],

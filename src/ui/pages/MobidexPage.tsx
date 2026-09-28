@@ -107,9 +107,11 @@ function DexEntry({ entry }: { entry: MobidexEntryView }) {
       <span className="caption muted">
         {entry.registered
           ? '登録済み'
-          : entry.unlocked
-            ? `${times}に出会えます`
-            : `累計 ${formatNumber(entry.unlockSteps)}歩で出会えます`}
+          : entry.retired
+            ? '現在は出会えません'
+            : entry.unlocked
+              ? `${times}に出会えます`
+              : `累計 ${formatNumber(entry.unlockSteps)}歩で出会えます`}
       </span>
     </div>
   )

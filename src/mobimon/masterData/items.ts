@@ -39,6 +39,14 @@ export const ITEMS: readonly Item[] = [
 
 const byId = new Map(ITEMS.map((i) => [i.id, i]))
 
+/** アイテムの名前。マスターデータにない ID なら「不明なアイテム」(画面を止めない)。 */
+export function itemNameOf(id: ItemId): string {
+  const item = byId.get(id)
+  if (item) return item.name
+  console.warn(`マスターデータにないアイテムの ID です: ${id}`)
+  return `不明なアイテム(${id})`
+}
+
 export function findItem(id: ItemId): Item {
   const item = byId.get(id)
   if (!item) throw new Error(`アイテムが見つかりません: ${id}`)

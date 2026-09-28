@@ -20,6 +20,11 @@ export function encounterCondition(
   return { timesOfDay: times, unlockSteps }
 }
 
+/** 出現しない種の条件(時間帯なし)。種をなくすときは、表から消さずにこの条件にする。 */
+export function neverAppearsCondition(unlockSteps = 0): EncounterCondition {
+  return { timesOfDay: new Set(), unlockSteps }
+}
+
 /** 累計歩数が閾値に達していれば解放済み。 */
 export const isUnlocked = (condition: EncounterCondition, steps: CumulativeSteps) =>
   steps >= condition.unlockSteps

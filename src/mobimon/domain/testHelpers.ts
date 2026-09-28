@@ -16,6 +16,7 @@ export function species(
     field?: BusinessField | null
     evolvesTo?: MobimonSpeciesId[]
     evolutionLevel?: number | null
+    retired?: boolean
   } = {},
 ): MobimonSpecies {
   return {
@@ -29,5 +30,6 @@ export function species(
     evolvesTo: options.evolvesTo ?? [],
     evolutionLevel: options.evolutionLevel ?? null,
     description: '',
+    retired: options.retired ?? false,
   }
 }

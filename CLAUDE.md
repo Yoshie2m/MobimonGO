@@ -35,6 +35,18 @@ npm run design:tokens # デザインシステムの tokens.json から tokens.cs
 - 各コンテキストの状態は localStorage の1つのキー(例: `mobimongo:stepResource`)に版番号付きでまとめて保存する(`src/shared/VersionedStorage.ts`)。
 - tsconfig の `erasableSyntaxOnly` が有効なため、コンストラクタ引数でのプロパティ宣言(`constructor(private readonly x: X)`)や enum は使えない。フィールドは明示的に宣言する。
 
+## 保存データの形式を変えるとき(マイグレーション)
+
+保存データ(localStorage の `mobimongo:stepResource` / `mobimongo:mobimon` / `mobimongo:app`)の形式を変えるときは、利用者のデータを引き継げるよう、必ず次の手順で行う。詳しい決まりは `domain_design.md` の「4. データの変更と移行」。
+
+1. 変更前の版の保存データの見本が `tests/fixtures/storage/<キー>/v<今の版>.json` にあることを確かめる(なければ先に作る)。
+2. 保存形式の型(各リポジトリの `Stored`)を変え、`src/<コンテキスト>/infrastructure/migrations/index.ts` の `CURRENT_VERSION` を1つ上げる。
+3. 同じファイルの `MIGRATIONS` に、1つ前の版から変換する関数を追加する。保存された JSON を受け取り JSON を返す純粋な関数にし、ドメインのクラスは使わない。公開した変換関数は書き換えない。
+4. 新しい版の見本 `v<新しい版>.json` を追加する(古い版の見本は消さない)。
+5. `npm test` で、すべての版の見本が最新まで移行して読み込めることを確かめる(`src/storageMigrations.test.ts`)。
+
+マスターデータ(種・アイテム・称号)の ID は変えず、使い回さない。種をなくすときは `MOBIMON_LIST.md` の出現時間帯を「出現しない」にする。種・アイテム・称号を追加したら `tests/fixtures/master/published-ids.json` にも追加する。
+
 ## 依存の向きのルール
 
 `eslint.config.js` の `no-restricted-imports` で検査しています。違反すると `npm run lint` がエラーになります。

@@ -1,4 +1,5 @@
 import { VersionedStorage, type KeyValueStorage } from '../../shared/VersionedStorage.ts'
+import { CURRENT_VERSION, MIGRATIONS } from './migrations/index.ts'
 import { Encounter, type EncounterState } from '../domain/Encounter.ts'
 import {
   encounterId,
@@ -22,9 +23,9 @@ import { Player } from '../domain/Player.ts'
 import { Wallet } from '../domain/Wallet.ts'
 
 export const MOBIMON_STORAGE_KEY = 'mobimongo:mobimon'
-const VERSION = 1
 
-interface Stored {
+/** 保存形式(最新の版)。形式を変えたら migrations/ の版を上げる。 */
+export interface Stored {
   players: { id: string; cumulativeSteps: number; titles: string[] }[]
   wallets: { playerId: string; energy: number; points: number; processedGrantIds: string[] }[]
   inventories: {
@@ -43,7 +44,12 @@ export class LocalStorageMobimonRepository implements MobimonRepository {
   private readonly storage: VersionedStorage<Stored>
 
   constructor(storage: KeyValueStorage) {
-    this.storage = new VersionedStorage<Stored>(storage, MOBIMON_STORAGE_KEY, VERSION)
+    this.storage = new VersionedStorage<Stored>(
+      storage,
+      MOBIMON_STORAGE_KEY,
+      CURRENT_VERSION,
+      MIGRATIONS,
+    )
   }
 
   load(): MobimonState {

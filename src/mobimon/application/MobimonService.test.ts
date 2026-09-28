@@ -1,7 +1,7 @@
 import { fixedClock } from '../../shared/Clock.ts'
 import { DomainError } from '../../shared/DomainError.ts'
 import { sequentialIdGenerator } from '../../shared/IdGenerator.ts'
-import { ownedMobimonId, playerId } from '../domain/ids.ts'
+import { mobimonSpeciesId, ownedMobimonId, playerId } from '../domain/ids.ts'
 import {
   emptyMobimonState,
   type MobimonRepository,
@@ -272,5 +272,22 @@ describe('図鑑の報酬', () => {
       },
     ])
     expect(service.listShop(USER).find((i) => i.itemId === ITEM_IDS.aroma)?.owned).toBe(1)
+  })
+})
+
+describe('マスターデータにない ID が保存データにあるとき', () => {
+  it('所持モビモン・図鑑・状態の画面を表示でき、「不明なモビモン」になる', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { service, repository } = setup()
+    repository.state.ownedMobimons.push(
+      OwnedMobimon.reconstruct(ownedMobimonId('o-x'), playerId(USER), mobimonSpeciesId('M999'), 0),
+    )
+    expect(service.listOwnedMobimon(USER)[0]).toMatchObject({
+      name: '不明なモビモン',
+      evolutionOptions: [],
+    })
+    expect(() => service.getMobidex(USER)).not.toThrow()
+    expect(() => service.getSummary(USER)).not.toThrow()
+    warn.mockRestore()
   })
 })

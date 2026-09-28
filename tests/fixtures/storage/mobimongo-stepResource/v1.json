@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "data": {
+    "walkers": [{ "id": "fixture-user", "startDate": "2026-09-01" }],
+    "stepRecords": [
+      {
+        "walkerId": "fixture-user",
+        "date": "2026-09-04",
+        "steps": 13186,
+        "source": "screenCapture"
+      },
+      { "walkerId": "fixture-user", "date": "2026-09-20", "steps": 9500, "source": "manual" }
+    ],
+    "dailyGrants": [
+      {
+        "walkerId": "fixture-user",
+        "date": "2026-09-04",
+        "grantedEnergy": 131,
+        "grantedPoints": 60
+      },
+      { "walkerId": "fixture-user", "date": "2026-09-20", "grantedEnergy": 95, "grantedPoints": 25 }
+    ]
+  }
+}

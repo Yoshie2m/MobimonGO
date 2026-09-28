@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "data": {
+    "players": [{ "id": "fixture-user", "cumulativeSteps": 22686, "titles": ["d-world"] }],
+    "wallets": [
+      {
+        "playerId": "fixture-user",
+        "energy": 196,
+        "points": 55,
+        "processedGrantIds": ["g-1", "g-2", "g-3", "g-4"]
+      }
+    ],
+    "inventories": [
+      {
+        "playerId": "fixture-user",
+        "counts": [
+          ["aroma", 1],
+          ["food", 2]
+        ],
+        "activeEffects": [
+          ["encounterBoost", { "itemId": "aroma", "multiplier": 2, "remainingUses": 2 }]
+        ],
+        "pending": []
+      }
+    ],
+    "mobidexes": [
+      {
+        "playerId": "fixture-user",
+        "registered": ["M001", "M002", "M151"],
+        "achievements": ["milestone:special"]
+      }
+    ],
+    "encounters": [
+      { "id": "e-1", "playerId": "fixture-user", "speciesId": "M001", "state": "捕獲済み" },
+      { "id": "e-2", "playerId": "fixture-user", "speciesId": "M010", "state": "出現中" }
+    ],
+    "ownedMobimons": [
+      { "id": "o-1", "playerId": "fixture-user", "speciesId": "M002", "experience": 2350 },
+      { "id": "o-2", "playerId": "fixture-user", "speciesId": "M151", "experience": 0 }
+    ]
+  }
+}

@@ -26,9 +26,9 @@ import { Player } from '../domain/Player.ts'
 import { EncounterCost, energy, MAX_LEVEL, point, TrainingCost } from '../domain/quantities.ts'
 import { timeOfDayAt, type TimeOfDay } from '../domain/TimeOfDay.ts'
 import { Wallet } from '../domain/Wallet.ts'
-import { findItem, ITEMS } from '../masterData/items.ts'
+import { findItem, itemNameOf, ITEMS } from '../masterData/items.ts'
 import { rewardForCompletion, rewardForMilestone, type Reward } from '../masterData/rewards.ts'
-import { findSpecies, SPECIES } from '../masterData/species.ts'
+import { findSpeciesOrUnknown, SPECIES } from '../masterData/species.ts'
 import { TITLES } from '../masterData/titles.ts'
 
 export interface OwnedMobimonView {
@@ -122,6 +122,8 @@ export interface MobidexEntryView {
   businessField: string | null
   unlockSteps: number
   unlocked: boolean
+  /** 出現しない種(図鑑の総数には含める)。 */
+  retired: boolean
   timesOfDay: TimeOfDay[]
 }
 
@@ -215,7 +217,7 @@ export class MobimonService {
       titles: titleNames(ctx.player.titles),
       activeEffects: [...ctx.inventory.activeEffects].map(([kind, effect]) => ({
         kind,
-        itemName: findItem(effect.itemId).name,
+        itemName: itemNameOf(effect.itemId),
         multiplier: effect.multiplier,
         remainingUses: effect.remainingUses,
       })),
@@ -269,7 +271,7 @@ export class MobimonService {
 
     const owned = OwnedMobimon.capture(ownedMobimonId(this.ids.next()), ctx.pid, event.speciesId)
     state.ownedMobimons.push(owned)
-    const registration = this.register(state, ctx.pid, findSpecies(event.speciesId))
+    const registration = this.register(state, ctx.pid, findSpeciesOrUnknown(event.speciesId))
     this.repository.save(state)
     return { mobimon: ownedView(owned), ...registration }
   }
@@ -313,10 +315,10 @@ export class MobimonService {
     const ctx = this.context(state, id)
     const index = this.ownedIndex(state, ctx.pid, ownedId)
     const current = state.ownedMobimons[index]
-    const from = findSpecies(current.speciesId)
+    const from = findSpeciesOrUnknown(current.speciesId)
     const { mobimon } = current.evolve(from, mobimonSpeciesId(toSpeciesId))
     state.ownedMobimons[index] = mobimon
-    const registration = this.register(state, ctx.pid, findSpecies(mobimon.speciesId))
+    const registration = this.register(state, ctx.pid, findSpeciesOrUnknown(mobimon.speciesId))
     this.repository.save(state)
     return { mobimon: ownedView(mobimon), fromName: from.name, ...registration }
   }
@@ -366,6 +368,7 @@ export class MobimonService {
         businessField: s.businessField,
         unlockSteps: s.condition.unlockSteps,
         unlocked: player.cumulativeSteps >= s.condition.unlockSteps,
+        retired: s.retired,
         timesOfDay: [...s.condition.timesOfDay],
       })),
       registeredCount: mobidex.registered.size,
@@ -406,7 +409,7 @@ export class MobimonService {
       if (reward.titleId) player = player.grantTitle(reward.titleId)
       rewards.push({
         reason: rewardReason(event),
-        items: reward.items.map((i) => ({ name: findItem(i.itemId).name, quantity: i.quantity })),
+        items: reward.items.map((i) => ({ name: itemNameOf(i.itemId), quantity: i.quantity })),
         title: reward.titleId ? titleNames([reward.titleId])[0] : null,
       })
     }
@@ -452,11 +455,11 @@ function rewardReason(event: MobidexCompleted | MobidexMilestoneReached): string
 }
 
 function titleNames(ids: readonly string[]): string[] {
-  return ids.map((id) => TITLES.find((t) => t.id === id)?.name ?? id)
+  return ids.map((id) => TITLES.find((t) => t.id === id)?.name ?? `不明な称号(${id})`)
 }
 
 function encounterView(encounter: Encounter): EncounterView {
-  const species = findSpecies(encounter.speciesId)
+  const species = findSpeciesOrUnknown(encounter.speciesId)
   return {
     encounterId: encounter.id,
     speciesId: species.id,
@@ -468,7 +471,7 @@ function encounterView(encounter: Encounter): EncounterView {
 }
 
 function ownedView(mobimon: OwnedMobimon): OwnedMobimonView {
-  const species = findSpecies(mobimon.speciesId)
+  const species = findSpeciesOrUnknown(mobimon.speciesId)
   const canEvolve = species.evolutionLevel !== null && mobimon.level >= species.evolutionLevel
   return {
     id: mobimon.id,
@@ -482,7 +485,7 @@ function ownedView(mobimon: OwnedMobimon): OwnedMobimonView {
     experienceToNextLevel:
       mobimon.level >= MAX_LEVEL ? null : experienceToReach(mobimon.level + 1) - mobimon.experience,
     evolutionOptions: canEvolve
-      ? species.evolvesTo.map((to) => ({ speciesId: to, name: findSpecies(to).name }))
+      ? species.evolvesTo.map((to) => ({ speciesId: to, name: findSpeciesOrUnknown(to).name }))
       : [],
     evolutionLevel: species.evolutionLevel,
   }

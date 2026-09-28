@@ -1,9 +1,12 @@
 import { isBusinessField, type BusinessField } from '../domain/BusinessField.ts'
-import { encounterCondition } from '../domain/EncounterCondition.ts'
+import { encounterCondition, neverAppearsCondition } from '../domain/EncounterCondition.ts'
 import { mobimonSpeciesId, type MobimonSpeciesId } from '../domain/ids.ts'
 import type { MobimonSpecies } from '../domain/MobimonSpecies.ts'
 import { RARITIES, type Rarity } from '../domain/Rarity.ts'
 import { TIMES_OF_DAY, type TimeOfDay } from '../domain/TimeOfDay.ts'
+
+/** 出現時間帯の欄にこう書いた種は、出現しない種(引退した種)として扱う。 */
+export const RETIRED = '出現しない'
 
 /** 進化に必要なレベル。系統の1段階目 → 2段階目は Lv10、2段階目 → 3段階目は Lv20。 */
 const EVOLUTION_LEVEL_FROM_FIRST_STAGE = 10
@@ -17,6 +20,8 @@ interface Row {
   component: string | null
   rarity: Rarity
   times: TimeOfDay[]
+  /** 出現時間帯が「出現しない」の種。 */
+  retired: boolean
   unlockSteps: number
   evolvesFromName: string | null
   evolvesToNames: string[]
@@ -55,7 +60,10 @@ export function parseMobimonList(markdown: string): MobimonSpecies[] {
       id: row.id,
       name: row.name,
       rarity: row.rarity,
-      condition: encounterCondition(row.times, row.unlockSteps),
+      condition: row.retired
+        ? neverAppearsCondition(row.unlockSteps)
+        : encounterCondition(row.times, row.unlockSteps),
+      retired: row.retired,
       businessField: row.field,
       product: row.product,
       component: row.component,
@@ -77,8 +85,10 @@ function parseRow(line: string, heading: string | null): Row {
   if (!(RARITIES as readonly string[]).includes(rarity)) {
     throw new Error(`MOBIMON_LIST.md: ${no} のレア度が不正です: ${rarity}`)
   }
-  const timesOfDay: TimeOfDay[] =
-    times === '全時間帯'
+  const retired = times === RETIRED
+  const timesOfDay: TimeOfDay[] = retired
+    ? []
+    : times === '全時間帯'
       ? [...TIMES_OF_DAY]
       : times.split(/[・、]/).map((t) => {
           if (!(TIMES_OF_DAY as readonly string[]).includes(t)) {
@@ -99,6 +109,7 @@ function parseRow(line: string, heading: string | null): Row {
     component: none(component),
     rarity: rarity as Rarity,
     times: timesOfDay,
+    retired,
     unlockSteps,
     evolvesFromName: none(from),
     evolvesToNames: none(to)?.split('、') ?? [],
