@@ -1,0 +1,51 @@
+# 実際の画像を Tesseract.js で読み取るテスト。通信が必要で遅いため、CI とは分けて、
+# 画面キャプチャの読み取りに関わるファイルを変えたとき・週1回・手動で実行する。
+name: 文字認識のテスト
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - src/stepResource/acl/screenCapture/**
+      - tests/fixtures/step-calendar-sample.png
+      - package-lock.json
+      - .github/workflows/ocr.yml
+  pull_request:
+    paths:
+      - src/stepResource/acl/screenCapture/**
+      - tests/fixtures/step-calendar-sample.png
+      - package-lock.json
+      - .github/workflows/ocr.yml
+  schedule:
+    - cron: '0 0 * * 1' # 毎週月曜 9:00(日本時間)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ocr:
+    name: 文字認識
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: 依存パッケージのインストール
+        run: npm ci
+
+      # 認識用の学習データは、Tesseract.js の版が変わらない限り再利用する
+      - name: 学習データのキャッシュ
+        uses: actions/cache@v4
+        with:
+          path: node_modules/.cache/tesseract
+          key: tesseract-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: tesseract-${{ runner.os }}-
+
+      - name: 文字認識のテスト
+        run: npm run test:ocr

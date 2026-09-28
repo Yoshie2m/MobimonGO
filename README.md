@@ -1,4 +1,7 @@
 # プロジェクト概要
+
+[![CI](https://github.com/Yoshie2m/MobimonGO/actions/workflows/ci.yml/badge.svg)](https://github.com/Yoshie2m/MobimonGO/actions/workflows/ci.yml)
+
 ヘルスケアのアプリとして日々の歩数情報を利用して、モビモンを収集する
 
 

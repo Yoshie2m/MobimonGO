@@ -214,3 +214,16 @@
 - [ ] DB の表の移行ツールを選び、版番号付きの SQL の移行ファイルをデプロイ時に適用する
 - [ ] 端末のデータを最新の版に移行してからサーバーに引き継ぐ
 
+## 9. 自動チェック(CI)
+
+GitHub Actions で、push と Pull Request のたびにテスト・lint・ビルドなどを自動で確かめる。データベース連携(7)より前に入れる。
+
+- 方針(決定済み): `main` ブランチの保護は当面入れず、`main` への直接 push を続けて CI の結果を通知で確かめる。複数人で開発するようになったら、Pull Request を経由する運用に切り替えて保護を有効にする。Dependabot の Pull Request は受け取る。
+
+- [ ] `.github/workflows/ci.yml` — `main` への push と、すべての Pull Request で実行する。`npm ci` → 整形チェック → lint → テスト → ビルド(型チェックを含む)→ `tokens.css` が `tokens.json` から生成したものと一致するか。Node.js は `.nvmrc` に合わせ、npm のキャッシュを使い、権限は読み取りだけにする
+- [ ] `.github/workflows/ocr.yml` — 文字認識のテスト(`npm run test:ocr`)。画面キャプチャの読み取りに関わるファイル(`src/stepResource/acl/screenCapture/**`、`package-lock.json`)の変更時・週1回・手動で実行し、学習データをキャッシュする
+- [ ] `.github/dependabot.yml` — npm パッケージと GitHub Actions の更新を週1回 Pull Request で受け取る
+- [ ] `README.md` に CI のバッジ、`CLAUDE.md` に CI で確かめている内容と Dependabot の Pull Request の取り込み方を書く
+- [ ] わざと失敗する変更(例: 整形の崩れ)で、CI が失敗して知らせることを確かめる
+  - テスト観点: `main` への push で CI が走り、すべての手順が通る / 整形の崩れ・lint の違反・テストの失敗・`tokens.css` の生成漏れで、それぞれ CI が失敗する / 文字認識のテストが、学習データのキャッシュありで通る
+

@@ -1,0 +1,50 @@
+# push と Pull Request のたびに、整形・lint・テスト・ビルド・生成ファイルの食い違いを確かめる。
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: チェック
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: 依存パッケージのインストール
+        run: npm ci
+
+      - name: 整形チェック
+        run: npm run format:check
+
+      - name: lint(依存の向きのルールを含む)
+        run: npm run lint
+
+      - name: テスト(データの移行のテストを含む)
+        run: npm test
+
+      - name: ビルド(型チェックを含む)
+        run: npm run build
+
+      - name: tokens.css が tokens.json から生成したものと一致するか
+        run: |
+          npm run design:tokens
+          git diff --exit-code src/ui/design-system/tokens.css || {
+            echo "::error file=src/ui/design-system/tokens.css::tokens.css が tokens.json と食い違っています。npm run design:tokens を実行してコミットしてください"
+            exit 1
+          }

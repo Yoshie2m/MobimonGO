@@ -27,6 +27,15 @@ npm run format:check # 整形の確認のみ
 npm run design:tokens # デザインシステムの tokens.json から tokens.css を生成
 ```
 
+## 自動チェック(CI)
+
+GitHub Actions(`.github/workflows/`)で、次を自動で確かめている。push する前にも、手元で同じコマンドが通ることを確かめること。
+
+- `ci.yml`(`main` への push とすべての Pull Request): `npm ci` → `npm run format:check` → `npm run lint` → `npm test` → `npm run build` → `tokens.css` が `tokens.json` から生成したものと一致するか(食い違ったら `npm run design:tokens` を実行してコミットする)。
+- `ocr.yml`(画面キャプチャの読み取りに関わるファイルの変更時・毎週月曜・手動): `npm run test:ocr`。
+- `main` ブランチの保護は当面入れていない(直接 push し、CI の結果は通知で確かめる)。複数人で開発するようになったら、Pull Request を経由する運用に切り替えて保護を有効にする。
+- Dependabot(`.github/dependabot.yml`)が、毎週月曜に npm パッケージと GitHub Actions の更新を Pull Request で届ける(マイナー・パッチの更新は1つにまとめる)。CI が通っていることを確かめてから取り込む。メジャーの更新は変更内容(破壊的な変更)を読み、必要なら手元で `npm test` と動作確認をしてから取り込む。
+
 ## 実装の構成
 
 - `src/composition.ts` がアプリの組み立て(依存の注入)を行い、`ui/` にはユースケースだけを渡す。ユーザーの ID は初回起動時に `mobimongo:userId` に発行し、`WalkerId`(将来は `PlayerId` も)に同じ値を使う。
