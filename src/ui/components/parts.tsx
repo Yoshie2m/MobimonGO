@@ -38,7 +38,7 @@ export function Notice({ tone, children }: { tone: 'success' | 'danger'; childre
   )
 }
 
-/** 事業分野のアイコン(対応するアイコンがない分野は何も表示しない)。 */
+/** 事業分野のアイコン。全8分野に対応するアイコンがある(未知の値は何も表示しない)。 */
 export function FieldIcon({ field, size = 24 }: { field: string | null; size?: number }) {
   const src = fieldIcon(field)
   if (!src) return null
