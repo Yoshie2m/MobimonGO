@@ -77,6 +77,18 @@ function App({ stepImport, game }: Props) {
         {page === 'shop' && <ShopPage game={game} onChanged={refresh} />}
         {page === 'mobidex' && <MobidexPage game={game} />}
       </main>
+
+      <footer className="app-footer caption muted">
+        <p>
+          本サイトは個人が制作したパロディ(二次創作)を目的としたジョークサイトであり、実在のいかなる企業、団体、および既存のゲーム作品(「ポケモンGO」等)とも一切関係ありません。
+        </p>
+        <p>
+          本サイト内で使用されているイラスト、キャラクター、システム等はすべて独自に作成されたものであり、公式のデータは一切使用しておりません。
+        </p>
+        <p>
+          本サイトの利用により生じた利益の発生、または損害(不利益)について、製作者は一切の責任を負いません。利益を目的とした運営は行っておらず、完全無料で提供されています。
+        </p>
+      </footer>
     </div>
   )
 }
