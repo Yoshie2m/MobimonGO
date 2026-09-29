@@ -1,6 +1,8 @@
 import { findItem, ITEM_IDS } from '../masterData/items.ts'
 import { SPECIES } from '../masterData/species.ts'
+import { DailyStepLog } from '../domain/DailyStepLog.ts'
 import { Encounter } from '../domain/Encounter.ts'
+import { Organization } from '../domain/Organization.ts'
 import { encounterId, grantId, ownedMobimonId, playerId, titleId } from '../domain/ids.ts'
 import { Inventory } from '../domain/Inventory.ts'
 import { Mobidex } from '../domain/Mobidex.ts'
@@ -31,9 +33,16 @@ describe('LocalStorageMobimonRepository', () => {
       mobidexes: [Mobidex.create(p).register(SPECIES[0], SPECIES).mobidex],
       encounters: [Encounter.appear(encounterId('e1'), p, SPECIES[0].id).encounter],
       ownedMobimons: [OwnedMobimon.reconstruct(ownedMobimonId('o1'), p, SPECIES[0].id, 250)],
+      organizations: [
+        Organization.create(p).addDirectReport('パワートレインシステム', {
+          id: ownedMobimonId('o1'),
+          rarity: 'コモン',
+          businessField: SPECIES[0].businessField,
+        }),
+      ],
+      dailyStepLogs: [DailyStepLog.create(p).record('2026-09-28', 12_000)],
     })
 
-    expect(JSON.parse(localStorage.getItem(MOBIMON_STORAGE_KEY)!).version).toBe(1)
     const loaded = new LocalStorageMobimonRepository(localStorage).load()
     expect(loaded.players[0]).toMatchObject({ cumulativeSteps: 1234, titles: ['d-world'] })
     expect(loaded.wallets[0]).toMatchObject({ energy: 80, points: 10 })
@@ -47,5 +56,11 @@ describe('LocalStorageMobimonRepository', () => {
     expect([...loaded.mobidexes[0].registered]).toEqual([SPECIES[0].id])
     expect(loaded.encounters[0].state).toBe('出現中')
     expect(loaded.ownedMobimons[0].level).toBe(3)
+    expect(JSON.parse(localStorage.getItem(MOBIMON_STORAGE_KEY)!).version).toBe(2)
+    expect(loaded.organizations[0].positionOf(ownedMobimonId('o1'))).toEqual({
+      field: 'パワートレインシステム',
+      role: 'メンバー',
+    })
+    expect(loaded.dailyStepLogs[0].stepsOn('2026-09-28')).toBe(12_000)
   })
 })

@@ -1,6 +1,8 @@
 import type {
   MobidexView,
   MobimonUseCases,
+  OrganizationUseCases,
+  OrganizationView,
   PlayerSummary,
 } from '../mobimon/application/mobimonUseCases.ts'
 import type { StepImportUseCases, WalkerStatus } from '../stepResource/application/stepImport.ts'
@@ -72,5 +74,39 @@ export const fakeGame = (overrides: Partial<MobimonUseCases> = {}): MobimonUseCa
   purchase: () => {},
   useItem: () => {},
   getMobidex: () => emptyMobidex,
+  ...overrides,
+})
+
+const emptyOrganization: OrganizationView = {
+  teams: [
+    'サーマルマネジメント&エアコンシステム',
+    'パワートレインシステム',
+    'セーフティ&コックピットシステム',
+  ].map((field) => ({
+    field: field as OrganizationView['teams'][number]['field'],
+    leader: null,
+    acceptableRanks: [],
+    maxSubLeaders: 0,
+    subLeaderCount: 0,
+    directReports: [],
+    maxDirectReports: 4,
+    maxMembersPerSubLeader: 4,
+    size: 0,
+    maxSize: 5,
+    leaderCandidates: [],
+  })),
+  unassigned: [],
+}
+
+/** 画面のテスト用の、組織の操作の偽物。 */
+export const fakeOrganization = (
+  overrides: Partial<OrganizationUseCases> = {},
+): OrganizationUseCases => ({
+  getOrganization: () => emptyOrganization,
+  setLeader: () => {},
+  addDirectReport: () => {},
+  setSubLeader: () => {},
+  addMemberUnder: () => {},
+  removeFromTeam: () => {},
   ...overrides,
 })

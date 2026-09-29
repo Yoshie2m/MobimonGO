@@ -18,6 +18,8 @@ import {
   type MobimonRepository,
   type MobimonState,
 } from '../domain/MobimonRepository.ts'
+import { DailyStepLog } from '../domain/DailyStepLog.ts'
+import { isTeamField, Organization, type Team } from '../domain/Organization.ts'
 import { OwnedMobimon } from '../domain/OwnedMobimon.ts'
 import { Player } from '../domain/Player.ts'
 import { Wallet } from '../domain/Wallet.ts'
@@ -37,6 +39,15 @@ export interface Stored {
   mobidexes: { playerId: string; registered: string[]; achievements: string[] }[]
   encounters: { id: string; playerId: string; speciesId: string; state: EncounterState }[]
   ownedMobimons: { id: string; playerId: string; speciesId: string; experience: number }[]
+  organizations: {
+    playerId: string
+    teams: {
+      field: string
+      leader: string | null
+      directReports: { id: string; isSubLeader: boolean; members: string[] }[]
+    }[]
+  }[]
+  dailyStepLogs: { playerId: string; entries: [string, number][] }[]
 }
 
 /** Mobimon コンテキストの状態を、localStorage の1つのキーにまとめて保存する。 */
@@ -101,6 +112,25 @@ export class LocalStorageMobimonRepository implements MobimonRepository {
           o.experience,
         ),
       ),
+      organizations: s.organizations.map((o) =>
+        Organization.reconstruct(
+          playerId(o.playerId),
+          o.teams
+            .filter((t) => isTeamField(t.field))
+            .map((t): Team => ({
+              field: t.field as Team['field'],
+              leader: t.leader === null ? null : ownedMobimonId(t.leader),
+              directReports: t.directReports.map((d) => ({
+                id: ownedMobimonId(d.id),
+                isSubLeader: d.isSubLeader,
+                members: d.members.map(ownedMobimonId),
+              })),
+            })),
+        ),
+      ),
+      dailyStepLogs: s.dailyStepLogs.map((l) =>
+        DailyStepLog.reconstruct(playerId(l.playerId), l.entries),
+      ),
     }
   }
 
@@ -139,6 +169,22 @@ export class LocalStorageMobimonRepository implements MobimonRepository {
         playerId: o.playerId,
         speciesId: o.speciesId,
         experience: o.experience,
+      })),
+      organizations: state.organizations.map((o) => ({
+        playerId: o.playerId,
+        teams: o.teams.map((t) => ({
+          field: t.field,
+          leader: t.leader,
+          directReports: t.directReports.map((d) => ({
+            id: d.id,
+            isSubLeader: d.isSubLeader,
+            members: [...d.members],
+          })),
+        })),
+      })),
+      dailyStepLogs: state.dailyStepLogs.map((l) => ({
+        playerId: l.playerId,
+        entries: [...l.entries],
       })),
     })
   }

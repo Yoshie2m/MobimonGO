@@ -3,6 +3,7 @@ import type { Clock } from '../../shared/Clock.ts'
 import { DomainError } from '../../shared/DomainError.ts'
 import type { IdGenerator } from '../../shared/IdGenerator.ts'
 import { BUSINESS_FIELDS, type BusinessField } from '../domain/BusinessField.ts'
+import { DailyStepLog } from '../domain/DailyStepLog.ts'
 import { Encounter } from '../domain/Encounter.ts'
 import { generateEncounter } from '../domain/EncounterGenerator.ts'
 import type { MobidexCompleted, MobidexMilestoneReached } from '../domain/events.ts'
@@ -22,6 +23,7 @@ import { MILESTONE_COUNTS, Mobidex } from '../domain/Mobidex.ts'
 import type { MobimonRepository, MobimonState } from '../domain/MobimonRepository.ts'
 import type { MobimonSpecies } from '../domain/MobimonSpecies.ts'
 import { experienceToReach, OwnedMobimon } from '../domain/OwnedMobimon.ts'
+import { Organization } from '../domain/Organization.ts'
 import { Player } from '../domain/Player.ts'
 import { EncounterCost, energy, MAX_LEVEL, point, TrainingCost } from '../domain/quantities.ts'
 import { timeOfDayAt, type TimeOfDay } from '../domain/TimeOfDay.ts'
@@ -30,6 +32,7 @@ import { findItem, itemNameOf, ITEMS } from '../masterData/items.ts'
 import { rewardForCompletion, rewardForMilestone, type Reward } from '../masterData/rewards.ts'
 import { findSpeciesOrUnknown, SPECIES } from '../masterData/species.ts'
 import { TITLES } from '../masterData/titles.ts'
+import { lookupFor } from './OrganizationService.ts'
 
 export interface OwnedMobimonView {
   id: string
@@ -46,6 +49,8 @@ export interface OwnedMobimonView {
   evolutionOptions: { speciesId: string; name: string }[]
   /** 進化に必要なレベル(進化しない種は null)。 */
   evolutionLevel: number | null
+  /** 所属チームと役割(チームに入っていなければ null)。 */
+  team?: { field: string; role: string } | null
 }
 
 export interface EncounterView {
@@ -157,7 +162,8 @@ export class MobimonService {
 
   /**
    * プレイヤーを登録する(登録済みなら何もしない)。
-   * Player と一緒に Wallet(残高 0)・Inventory(空)・Mobidex(空)を1回の保存で作る。
+   * Player と一緒に Wallet(残高 0)・Inventory(空)・Mobidex(空)・Organization(空の3チーム)・
+   * DailyStepLog(空)を1回の保存で作る。
    * id はウォーカーと同じユーザーの ID を使う。
    */
   registerPlayer(id: string): void {
@@ -168,12 +174,14 @@ export class MobimonService {
     state.wallets.push(Wallet.create(pid))
     state.inventories.push(Inventory.create(pid))
     state.mobidexes.push(Mobidex.create(pid))
+    state.organizations.push(Organization.create(pid))
+    state.dailyStepLogs.push(DailyStepLog.create(pid))
     this.repository.save(state)
   }
 
   /**
    * 歩数リソース変換が公開したイベントを受け取る(Published Language)。
-   * 付与は GrantId で重複を除き、累計歩数は減らない方向にだけ更新する。
+   * 付与は GrantId で重複を除き、累計歩数・日ごとの歩数は減らない方向にだけ更新する。
    */
   handleStepResourceEvent(event: StepResourceEvent): void {
     const state = this.repository.load()
@@ -194,6 +202,11 @@ export class MobimonService {
       case 'CumulativeStepsUpdated':
         replace(state.players, (p) =>
           p.id === pid ? p.updateCumulativeSteps(event.cumulativeSteps) : p,
+        )
+        break
+      case 'DailyStepsCounted':
+        replace(state.dailyStepLogs, (l) =>
+          l.playerId === pid ? l.record(event.date, event.steps) : l,
         )
         break
     }
@@ -228,10 +241,17 @@ export class MobimonService {
   /** プレイヤーの所持モビモン一覧(OwnedMobimon を PlayerId で検索する)。 */
   listOwnedMobimon(id: string): OwnedMobimonView[] {
     const pid = toPlayerId(id)
-    return this.repository
-      .load()
-      .ownedMobimons.filter((m) => m.playerId === pid)
-      .map(ownedView)
+    const state = this.repository.load()
+    const organization = state.organizations.find((o) => o.playerId === pid)
+    return state.ownedMobimons
+      .filter((m) => m.playerId === pid)
+      .map((m) => {
+        const position = organization?.positionOf(m.id)
+        return {
+          ...ownedView(m),
+          team: position ? { field: position.field, role: position.role } : null,
+        }
+      })
   }
 
   /**
@@ -319,6 +339,11 @@ export class MobimonService {
     const { mobimon } = current.evolve(from, mobimonSpeciesId(toSpeciesId))
     state.ownedMobimons[index] = mobimon
     const registration = this.register(state, ctx.pid, findSpeciesOrUnknown(mobimon.speciesId))
+    // 進化でレア度が変わり、編成の条件を満たさなくなった配置を外す
+    const lookup = lookupFor(state, ctx.pid).lookup
+    state.organizations = state.organizations.map((o) =>
+      o.playerId === ctx.pid ? o.normalize(lookup).organization : o,
+    )
     this.repository.save(state)
     return { mobimon: ownedView(mobimon), fromName: from.name, ...registration }
   }

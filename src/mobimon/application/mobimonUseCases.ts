@@ -26,6 +26,25 @@ export type {
   TrainResult,
 } from './MobimonService.ts'
 export { BUSINESS_FIELDS, type BusinessField } from '../domain/BusinessField.ts'
+export { TEAM_FIELDS, type TeamField } from '../domain/Organization.ts'
+export type {
+  DirectReportView,
+  OrganizationView,
+  TeamMemberView,
+  TeamView,
+} from './OrganizationService.ts'
+
+import type { OrganizationView } from './OrganizationService.ts'
+
+/** 組織(チームの編成)の操作。 */
+export interface OrganizationUseCases {
+  getOrganization(): OrganizationView
+  setLeader(field: string, ownedId: string): void
+  addDirectReport(field: string, ownedId: string): void
+  setSubLeader(field: string, ownedId: string, isSubLeader: boolean): void
+  addMemberUnder(field: string, subLeaderId: string, ownedId: string): void
+  removeFromTeam(ownedId: string): void
+}
 
 export interface MobimonUseCases {
   getSummary(): PlayerSummary

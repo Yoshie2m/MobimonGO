@@ -79,6 +79,11 @@ function CollectionPage({ game, onChanged }: Props) {
                 <div className="stack">
                   <div className="row">
                     <Tag>{m.rarity}</Tag>
+                    {m.team && (
+                      <Tag>
+                        {m.team.field}・{m.team.role}
+                      </Tag>
+                    )}
                     {m.evolutionLevel && m.evolutionOptions.length === 0 && (
                       <span className="caption muted">Lv{m.evolutionLevel} で進化できます</span>
                     )}

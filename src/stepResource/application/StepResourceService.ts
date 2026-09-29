@@ -6,6 +6,7 @@ import type { IdGenerator } from '../../shared/IdGenerator.ts'
 import { localDateOf, parseLocalDate, type LocalDate } from '../../shared/LocalDate.ts'
 import { stepValueError, type StepReading } from '../acl/StepReading.ts'
 import { sumCumulativeSteps } from '../domain/CumulativeStepsCalculator.ts'
+import { countedDailySteps } from '../domain/ConversionRule.ts'
 import { DailyGrant } from '../domain/DailyGrant.ts'
 import { StepGoal } from '../domain/PointAwardRule.ts'
 import type { StepsRecorded } from '../domain/events.ts'
@@ -144,6 +145,12 @@ export class StepResourceService {
 
       // StepsRecorded の購読者(StepConverter / StepGoalEvaluator)を同じ保存単位の中で処理する
       const { energy, points } = this.grantFor(state, recorded.record, published)
+      published.push({
+        type: 'DailyStepsCounted',
+        walkerId: walker.id,
+        date,
+        steps: countedDailySteps(recorded.record.steps),
+      })
       result.imported.push({ date, steps: recorded.record.steps, energy, points })
     }
 

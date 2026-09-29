@@ -13,7 +13,7 @@ const render = (node: ReactNode) => root.render(<StrictMode>{node}</StrictMode>)
 
 try {
   const app = createApp()
-  render(<App stepImport={app.stepImport} game={app.game} />)
+  render(<App stepImport={app.stepImport} game={app.game} organization={app.organization} />)
 } catch (e) {
   // 保存データを読み込めなかったときは、アプリを止めずに案内する(データは書き換えない)
   if (!(e instanceof StorageError)) throw e

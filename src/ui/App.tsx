@@ -1,5 +1,8 @@
 import { useState } from 'react'
-import type { MobimonUseCases } from '../mobimon/application/mobimonUseCases.ts'
+import type {
+  MobimonUseCases,
+  OrganizationUseCases,
+} from '../mobimon/application/mobimonUseCases.ts'
 import type { StepImportUseCases } from '../stepResource/application/stepImport.ts'
 import { ICONS } from './design-system/index.ts'
 import { formatNumber } from './components/format.ts'
@@ -7,26 +10,30 @@ import CollectionPage from './pages/CollectionPage.tsx'
 import EncounterPage from './pages/EncounterPage.tsx'
 import HomePage from './pages/HomePage.tsx'
 import MobidexPage from './pages/MobidexPage.tsx'
+import OrganizationPage from './pages/OrganizationPage.tsx'
 import ShopPage from './pages/ShopPage.tsx'
 import StepImportPage from './StepImportPage.tsx'
 
 interface Props {
   stepImport: StepImportUseCases
   game: MobimonUseCases
+  organization: OrganizationUseCases
 }
 
-export type PageId = 'home' | 'steps' | 'encounter' | 'collection' | 'shop' | 'mobidex'
+export type PageId =
+  'home' | 'steps' | 'encounter' | 'collection' | 'organization' | 'shop' | 'mobidex'
 
 const PAGES: { id: PageId; label: string }[] = [
   { id: 'home', label: 'ホーム' },
   { id: 'steps', label: '歩数' },
   { id: 'encounter', label: 'さがす' },
   { id: 'collection', label: 'なかま' },
+  { id: 'organization', label: '組織' },
   { id: 'shop', label: 'ショップ' },
   { id: 'mobidex', label: '図鑑' },
 ]
 
-function App({ stepImport, game }: Props) {
+function App({ stepImport, game, organization }: Props) {
   const [page, setPage] = useState<PageId>('home')
   // 各画面は描画のたびにユースケースから状態を読む。操作のあとに再描画して、ヘッダーなどにも反映する
   const [, setVersion] = useState(0)
@@ -74,6 +81,9 @@ function App({ stepImport, game }: Props) {
         {page === 'steps' && <StepImportPage useCases={stepImport} onImported={refresh} />}
         {page === 'encounter' && <EncounterPage game={game} onChanged={refresh} />}
         {page === 'collection' && <CollectionPage game={game} onChanged={refresh} />}
+        {page === 'organization' && (
+          <OrganizationPage organization={organization} onChanged={refresh} />
+        )}
         {page === 'shop' && <ShopPage game={game} onChanged={refresh} />}
         {page === 'mobidex' && <MobidexPage game={game} />}
       </main>

@@ -187,3 +187,26 @@ describe('fixedClock', () => {
     ).toBe(4)
   })
 })
+
+describe('日ごとの歩数の公開(DailyStepsCounted)', () => {
+  it('取り込んだ日ごとに、1日 20,000歩で頭打ちにした値を公開する', () => {
+    const bus = new EventBus<StepResourceEvent>()
+    const daily: StepResourceEvent[] = []
+    bus.subscribe('DailyStepsCounted', (e) => daily.push(e))
+    const service = new StepResourceService(
+      new InMemoryRepository(),
+      { now: () => new Date(2026, 8, 19, 20, 0) },
+      sequentialIdGenerator('grant'),
+      bus,
+    )
+    service.registerWalker(USER)
+
+    service.importSteps(USER, [{ date: '2026-09-19', steps: 12_000 }], 'manual')
+    service.importSteps(USER, [{ date: '2026-09-19', steps: 25_000 }], 'manual')
+
+    expect(daily).toEqual([
+      { type: 'DailyStepsCounted', walkerId: USER, date: '2026-09-19', steps: 12_000 },
+      { type: 'DailyStepsCounted', walkerId: USER, date: '2026-09-19', steps: 20_000 },
+    ])
+  })
+})

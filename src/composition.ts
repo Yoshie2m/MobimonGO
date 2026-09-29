@@ -1,6 +1,10 @@
 import { loadOrCreateUserId } from './appStorage.ts'
 import { MobimonService } from './mobimon/application/MobimonService.ts'
-import type { MobimonUseCases } from './mobimon/application/mobimonUseCases.ts'
+import type {
+  MobimonUseCases,
+  OrganizationUseCases,
+} from './mobimon/application/mobimonUseCases.ts'
+import { OrganizationService } from './mobimon/application/OrganizationService.ts'
 import { LocalStorageMobimonRepository } from './mobimon/infrastructure/LocalStorageMobimonRepository.ts'
 import type { StepResourceEvent } from './publishedLanguage/stepResourceEvents.ts'
 import { systemClock, type Clock } from './shared/Clock.ts'
@@ -35,10 +39,17 @@ export function createApp({
     ids,
     events,
   )
-  const mobimon = new MobimonService(new LocalStorageMobimonRepository(storage), clock, ids, random)
+  const mobimonRepository = new LocalStorageMobimonRepository(storage)
+  const mobimon = new MobimonService(mobimonRepository, clock, ids, random)
+  const organizationService = new OrganizationService(mobimonRepository)
 
   // 歩数リソース変換 → Mobimon は Published Language のイベントだけでつながる
-  for (const type of ['EnergyGranted', 'PointsGranted', 'CumulativeStepsUpdated'] as const) {
+  for (const type of [
+    'EnergyGranted',
+    'PointsGranted',
+    'CumulativeStepsUpdated',
+    'DailyStepsCounted',
+  ] as const) {
     events.subscribe(type, (event) => mobimon.handleStepResourceEvent(event))
   }
 
@@ -72,5 +83,17 @@ export function createApp({
     getMobidex: () => mobimon.getMobidex(userId),
   }
 
-  return { events, stepImport, game, userId }
+  const organization: OrganizationUseCases = {
+    getOrganization: () => organizationService.getOrganization(userId),
+    setLeader: (field, ownedId) => organizationService.setLeader(userId, field, ownedId),
+    addDirectReport: (field, ownedId) =>
+      organizationService.addDirectReport(userId, field, ownedId),
+    setSubLeader: (field, ownedId, isSubLeader) =>
+      organizationService.setSubLeader(userId, field, ownedId, isSubLeader),
+    addMemberUnder: (field, subLeaderId, ownedId) =>
+      organizationService.addMemberUnder(userId, field, subLeaderId, ownedId),
+    removeFromTeam: (ownedId) => organizationService.removeFromTeam(userId, ownedId),
+  }
+
+  return { events, stepImport, game, organization, userId }
 }

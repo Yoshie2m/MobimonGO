@@ -73,4 +73,14 @@ describe('一連の流れ(結合テスト)', () => {
     app.stepImport.importSteps([{ date: '2026-09-19', steps: 13_186 }], 'manual')
     expect(app.game.getSummary()).toMatchObject({ energy: 131, points: 60 })
   })
+  it('歩数を取り込むと、日ごとの歩数(20,000歩で頭打ち)が Mobimon に記録される', () => {
+    const app = createApp({
+      storage: localStorage,
+      clock: fixedClock(new Date(2026, 8, 19, 20, 0)),
+    })
+    app.stepImport.importSteps([{ date: '2026-09-19', steps: 25_000 }], 'manual')
+    const mobimon = JSON.parse(localStorage.getItem('mobimongo:mobimon')!).data
+    expect(mobimon.dailyStepLogs[0].entries).toEqual([['2026-09-19', 20_000]])
+    expect(app.organization.getOrganization().teams).toHaveLength(3)
+  })
 })

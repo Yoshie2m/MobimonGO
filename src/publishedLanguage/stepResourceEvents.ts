@@ -28,4 +28,17 @@ export interface CumulativeStepsUpdated {
   cumulativeSteps: number
 }
 
-export type StepResourceEvent = EnergyGranted | PointsGranted | CumulativeStepsUpdated
+/**
+ * 日ごとの歩数を取り込んだ。その日の歩数を 1日の上限(20,000歩)で頭打ちにした値そのものを載せる
+ * (増分ではない)。Mobimon は仕事の進み具合に使う。
+ */
+export interface DailyStepsCounted {
+  type: 'DailyStepsCounted'
+  walkerId: string
+  /** YYYY-MM-DD */
+  date: string
+  steps: number
+}
+
+export type StepResourceEvent =
+  EnergyGranted | PointsGranted | CumulativeStepsUpdated | DailyStepsCounted
