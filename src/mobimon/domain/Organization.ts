@@ -59,6 +59,13 @@ export interface Team {
 
 export type TeamRole = 'リーダー' | 'サブリーダー' | 'メンバー'
 
+/** 受注したときのチーム編成(リーダー・サブリーダー・それ以外のメンバー)。 */
+export interface TeamSnapshotLike {
+  leader: OwnedMobimonId
+  subLeaders: OwnedMobimonId[]
+  members: OwnedMobimonId[]
+}
+
 export interface Position {
   field: TeamField
   role: TeamRole
@@ -208,7 +215,11 @@ export class Organization {
    * 条件を満たさなくなった配置を外す(持っていないモビモン、資格のないリーダー、
    * 置ける数を超えたサブリーダーなど)。外した ID を返す。
    */
-  normalize(lookup: MobimonLookup): { organization: Organization; removed: OwnedMobimonId[] } {
+  normalize(
+    lookup: MobimonLookup,
+    /** 仕事を受けているチーム(組み替えないので、整えもしない)。 */
+    locked: ReadonlySet<TeamField> = new Set(),
+  ): { organization: Organization; removed: OwnedMobimonId[] } {
     const removed: OwnedMobimonId[] = []
     const owned = (id: OwnedMobimonId) => {
       if (lookup(id)) return true
@@ -216,6 +227,7 @@ export class Organization {
       return false
     }
     const teams = this.teams.map((team): Team => {
+      if (locked.has(team.field)) return team
       let leader = team.leader
       if (leader && (!owned(leader) || !canLead(team.field, lookup(leader)!))) {
         if (lookup(leader)) removed.push(leader)
@@ -242,6 +254,17 @@ export class Organization {
       return { ...team, leader, directReports }
     })
     return { organization: new Organization(this.playerId, teams), removed: [...new Set(removed)] }
+  }
+
+  /** 受注するときのチーム編成(リーダーがいなければ undefined)。 */
+  snapshot(field: TeamField): TeamSnapshotLike | undefined {
+    const team = this.team(field)
+    if (!team.leader) return undefined
+    return {
+      leader: team.leader,
+      subLeaders: team.directReports.filter((d) => d.isSubLeader).map((d) => d.id),
+      members: team.directReports.flatMap((d) => (d.isSubLeader ? d.members : [d.id])),
+    }
   }
 
   private assertFree(id: OwnedMobimonId) {

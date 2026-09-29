@@ -68,6 +68,8 @@ function TeamCard({ team, unassigned, organization, run }: TeamCardProps) {
   const ranks = team.acceptableRanks.length
     ? `受けられる仕事: ${team.acceptableRanks.join('・')} ランク`
     : 'リーダーを置くと仕事を受けられます'
+  // 仕事を受けている間は組み替えられないので、操作を出さない
+  const editable = !team.locked
 
   return (
     <section aria-label={`${team.field}のチーム`}>
@@ -82,20 +84,23 @@ function TeamCard({ team, unassigned, organization, run }: TeamCardProps) {
         value={`${team.size} / ${team.maxSize}体`}
       >
         <div className="stack">
+          {team.locked && <p className="caption muted">仕事を受けているため、組み替えられません</p>}
           {/* リーダー */}
           <div className="team-slot">
             <p className="label muted">リーダー</p>
             {team.leader ? (
               <MemberRow member={team.leader} role="リーダー">
-                <Button
-                  size="small"
-                  variant="secondary"
-                  onClick={() => run(() => organization.removeFromTeam(team.leader!.id))}
-                >
-                  外す
-                </Button>
+                {editable && (
+                  <Button
+                    size="small"
+                    variant="secondary"
+                    onClick={() => run(() => organization.removeFromTeam(team.leader!.id))}
+                  >
+                    外す
+                  </Button>
+                )}
               </MemberRow>
-            ) : team.leaderCandidates.length > 0 ? (
+            ) : !editable ? null : team.leaderCandidates.length > 0 ? (
               <Picker
                 label={`${team.field}のリーダー`}
                 candidates={team.leaderCandidates}
@@ -121,36 +126,40 @@ function TeamCard({ team, unassigned, organization, run }: TeamCardProps) {
             {team.directReports.map((d) => (
               <div key={d.member.id} className="stack">
                 <MemberRow member={d.member} role={d.isSubLeader ? 'サブリーダー' : 'メンバー'}>
-                  {d.isSubLeader ? (
-                    <Button
-                      size="small"
-                      variant="secondary"
-                      onClick={() =>
-                        run(() => organization.setSubLeader(team.field, d.member.id, false))
-                      }
-                    >
-                      サブリーダーをやめる
-                    </Button>
-                  ) : (
-                    d.canBecomeSubLeader && (
+                  {editable && (
+                    <>
+                      {d.isSubLeader ? (
+                        <Button
+                          size="small"
+                          variant="secondary"
+                          onClick={() =>
+                            run(() => organization.setSubLeader(team.field, d.member.id, false))
+                          }
+                        >
+                          サブリーダーをやめる
+                        </Button>
+                      ) : (
+                        d.canBecomeSubLeader && (
+                          <Button
+                            size="small"
+                            variant="secondary"
+                            onClick={() =>
+                              run(() => organization.setSubLeader(team.field, d.member.id, true))
+                            }
+                          >
+                            サブリーダーにする
+                          </Button>
+                        )
+                      )}
                       <Button
                         size="small"
                         variant="secondary"
-                        onClick={() =>
-                          run(() => organization.setSubLeader(team.field, d.member.id, true))
-                        }
+                        onClick={() => run(() => organization.removeFromTeam(d.member.id))}
                       >
-                        サブリーダーにする
+                        外す
                       </Button>
-                    )
+                    </>
                   )}
-                  <Button
-                    size="small"
-                    variant="secondary"
-                    onClick={() => run(() => organization.removeFromTeam(d.member.id))}
-                  >
-                    外す
-                  </Button>
                 </MemberRow>
                 {d.isSubLeader && (
                   <div className="team-sub stack">
@@ -160,30 +169,35 @@ function TeamCard({ team, unassigned, organization, run }: TeamCardProps) {
                     </p>
                     {d.members.map((m) => (
                       <MemberRow key={m.id} member={m} role="メンバー">
-                        <Button
-                          size="small"
-                          variant="secondary"
-                          onClick={() => run(() => organization.removeFromTeam(m.id))}
-                        >
-                          外す
-                        </Button>
+                        {editable && (
+                          <Button
+                            size="small"
+                            variant="secondary"
+                            onClick={() => run(() => organization.removeFromTeam(m.id))}
+                          >
+                            外す
+                          </Button>
+                        )}
                       </MemberRow>
                     ))}
-                    {d.members.length < team.maxMembersPerSubLeader && unassigned.length > 0 && (
-                      <Picker
-                        label={`${d.member.name}の下に加えるメンバー`}
-                        candidates={unassigned}
-                        action="メンバーに加える"
-                        onPick={(id) =>
-                          run(() => organization.addMemberUnder(team.field, d.member.id, id))
-                        }
-                      />
-                    )}
+                    {editable &&
+                      d.members.length < team.maxMembersPerSubLeader &&
+                      unassigned.length > 0 && (
+                        <Picker
+                          label={`${d.member.name}の下に加えるメンバー`}
+                          candidates={unassigned}
+                          action="メンバーに加える"
+                          onPick={(id) =>
+                            run(() => organization.addMemberUnder(team.field, d.member.id, id))
+                          }
+                        />
+                      )}
                   </div>
                 )}
               </div>
             ))}
-            {team.directReports.length < team.maxDirectReports &&
+            {editable &&
+              team.directReports.length < team.maxDirectReports &&
               (unassigned.length > 0 ? (
                 <Picker
                   label={`${team.field}の部下`}

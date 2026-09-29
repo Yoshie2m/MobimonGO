@@ -34,7 +34,17 @@ export type {
   TeamView,
 } from './OrganizationService.ts'
 
+export type { ActiveJobView, JobOfferView, JobsView } from './JobService.ts'
+
+import type { JobsView } from './JobService.ts'
 import type { OrganizationView } from './OrganizationService.ts'
+
+/** 仕事(掲示板・受注・辞退)の操作。 */
+export interface JobUseCases {
+  getJobs(): JobsView
+  accept(offerKey: string): void
+  decline(jobId: string): void
+}
 
 /** 組織(チームの編成)の操作。 */
 export interface OrganizationUseCases {

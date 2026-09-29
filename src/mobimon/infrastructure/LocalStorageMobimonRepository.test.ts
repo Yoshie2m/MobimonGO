@@ -5,6 +5,7 @@ import { Encounter } from '../domain/Encounter.ts'
 import { Organization } from '../domain/Organization.ts'
 import { encounterId, grantId, ownedMobimonId, playerId, titleId } from '../domain/ids.ts'
 import { Inventory } from '../domain/Inventory.ts'
+import { Job, jobId } from '../domain/Job.ts'
 import { Mobidex } from '../domain/Mobidex.ts'
 import { OwnedMobimon } from '../domain/OwnedMobimon.ts'
 import { Player } from '../domain/Player.ts'
@@ -41,6 +42,24 @@ describe('LocalStorageMobimonRepository', () => {
         }),
       ],
       dailyStepLogs: [DailyStepLog.create(p).record('2026-09-28', 12_000)],
+      jobs: [
+        Job.accept({
+          id: jobId('j1'),
+          playerId: p,
+          offer: {
+            key: '2026-09-28/パワートレインシステム/C',
+            date: '2026-09-28',
+            field: 'パワートレインシステム',
+            rank: 'C',
+            title: '燃料ポンプの調子を確かめる',
+          },
+          now: new Date(2026, 8, 28, 12),
+          today: '2026-09-28',
+          log: DailyStepLog.create(p),
+          team: { leader: ownedMobimonId('o1'), subLeaders: [], members: [] },
+          successRate: 85,
+        }).decline(new Date(2026, 8, 28, 13), 0),
+      ],
     })
 
     const loaded = new LocalStorageMobimonRepository(localStorage).load()
@@ -56,11 +75,22 @@ describe('LocalStorageMobimonRepository', () => {
     expect([...loaded.mobidexes[0].registered]).toEqual([SPECIES[0].id])
     expect(loaded.encounters[0].state).toBe('出現中')
     expect(loaded.ownedMobimons[0].level).toBe(3)
-    expect(JSON.parse(localStorage.getItem(MOBIMON_STORAGE_KEY)!).version).toBe(2)
+    expect(JSON.parse(localStorage.getItem(MOBIMON_STORAGE_KEY)!).version).toBe(3)
     expect(loaded.organizations[0].positionOf(ownedMobimonId('o1'))).toEqual({
       field: 'パワートレインシステム',
       role: 'メンバー',
     })
     expect(loaded.dailyStepLogs[0].stepsOn('2026-09-28')).toBe(12_000)
+    expect(loaded.jobs[0]).toMatchObject({
+      id: 'j1',
+      field: 'パワートレインシステム',
+      rank: 'C',
+      countStartDate: '2026-09-28',
+      deadlineDate: '2026-09-30',
+      requiredSteps: 20_000,
+      successRate: 85,
+      team: { leader: 'o1', subLeaders: [], members: [] },
+      status: '辞退',
+    })
   })
 })

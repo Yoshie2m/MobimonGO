@@ -25,6 +25,7 @@ const member = (
 
 const team = (overrides: Partial<TeamView> = {}): TeamView => ({
   field: THERMAL,
+  locked: false,
   leader: null,
   acceptableRanks: [],
   maxSubLeaders: 0,
@@ -154,5 +155,32 @@ describe('OrganizationPage', () => {
     )
     await user.click(screen.getByRole('button', { name: 'リーダーにする' }))
     expect(screen.getByRole('alert')).toHaveTextContent('すでにチームに入っています')
+  })
+
+  it('仕事を受けているチームには、組み替えの操作を出さない', () => {
+    const thermal = team({
+      locked: true,
+      leader: member('lead', 'ゼンネツオウ', '超レア', THERMAL),
+      directReports: [
+        {
+          member: member('m1', 'フウフウ', 'コモン'),
+          isSubLeader: false,
+          canBecomeSubLeader: false,
+          members: [],
+        },
+      ],
+    })
+    render(
+      <OrganizationPage
+        organization={fakeOrganization({
+          getOrganization: () => view(thermal, [member('free', 'スズカゼン')]),
+        })}
+        onChanged={() => {}}
+      />,
+    )
+    const region = screen.getByRole('region', { name: `${THERMAL}のチーム` })
+    expect(within(region).getByText('仕事を受けているため、組み替えられません')).toBeVisible()
+    expect(within(region).queryByRole('button')).toBeNull()
+    expect(within(region).queryByRole('combobox')).toBeNull()
   })
 })

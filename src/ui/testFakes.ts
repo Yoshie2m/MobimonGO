@@ -1,4 +1,6 @@
 import type {
+  JobsView,
+  JobUseCases,
   MobidexView,
   MobimonUseCases,
   OrganizationUseCases,
@@ -84,6 +86,7 @@ const emptyOrganization: OrganizationView = {
     'セーフティ&コックピットシステム',
   ].map((field) => ({
     field: field as OrganizationView['teams'][number]['field'],
+    locked: false,
     leader: null,
     acceptableRanks: [],
     maxSubLeaders: 0,
@@ -108,5 +111,15 @@ export const fakeOrganization = (
   setSubLeader: () => {},
   addMemberUnder: () => {},
   removeFromTeam: () => {},
+  ...overrides,
+})
+
+const emptyJobs: JobsView = { today: '2026-09-28', board: [], activeJobs: [], declinesLeft: 1 }
+
+/** 画面のテスト用の、仕事の操作の偽物。 */
+export const fakeJobs = (overrides: Partial<JobUseCases> = {}): JobUseCases => ({
+  getJobs: () => emptyJobs,
+  accept: () => {},
+  decline: () => {},
   ...overrides,
 })

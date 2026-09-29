@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type {
+  JobUseCases,
   MobimonUseCases,
   OrganizationUseCases,
 } from '../mobimon/application/mobimonUseCases.ts'
@@ -9,6 +10,7 @@ import { formatNumber } from './components/format.ts'
 import CollectionPage from './pages/CollectionPage.tsx'
 import EncounterPage from './pages/EncounterPage.tsx'
 import HomePage from './pages/HomePage.tsx'
+import JobsPage from './pages/JobsPage.tsx'
 import MobidexPage from './pages/MobidexPage.tsx'
 import OrganizationPage from './pages/OrganizationPage.tsx'
 import ShopPage from './pages/ShopPage.tsx'
@@ -18,10 +20,11 @@ interface Props {
   stepImport: StepImportUseCases
   game: MobimonUseCases
   organization: OrganizationUseCases
+  jobs: JobUseCases
 }
 
 export type PageId =
-  'home' | 'steps' | 'encounter' | 'collection' | 'organization' | 'shop' | 'mobidex'
+  'home' | 'steps' | 'encounter' | 'collection' | 'organization' | 'jobs' | 'shop' | 'mobidex'
 
 const PAGES: { id: PageId; label: string }[] = [
   { id: 'home', label: 'ホーム' },
@@ -29,11 +32,12 @@ const PAGES: { id: PageId; label: string }[] = [
   { id: 'encounter', label: 'さがす' },
   { id: 'collection', label: 'なかま' },
   { id: 'organization', label: '組織' },
+  { id: 'jobs', label: '仕事' },
   { id: 'shop', label: 'ショップ' },
   { id: 'mobidex', label: '図鑑' },
 ]
 
-function App({ stepImport, game, organization }: Props) {
+function App({ stepImport, game, organization, jobs }: Props) {
   const [page, setPage] = useState<PageId>('home')
   // 各画面は描画のたびにユースケースから状態を読む。操作のあとに再描画して、ヘッダーなどにも反映する
   const [, setVersion] = useState(0)
@@ -84,6 +88,7 @@ function App({ stepImport, game, organization }: Props) {
         {page === 'organization' && (
           <OrganizationPage organization={organization} onChanged={refresh} />
         )}
+        {page === 'jobs' && <JobsPage jobs={jobs} onChanged={refresh} />}
         {page === 'shop' && <ShopPage game={game} onChanged={refresh} />}
         {page === 'mobidex' && <MobidexPage game={game} />}
       </main>

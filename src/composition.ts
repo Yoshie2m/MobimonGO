@@ -1,6 +1,8 @@
 import { loadOrCreateUserId } from './appStorage.ts'
 import { MobimonService } from './mobimon/application/MobimonService.ts'
+import { JobService } from './mobimon/application/JobService.ts'
 import type {
+  JobUseCases,
   MobimonUseCases,
   OrganizationUseCases,
 } from './mobimon/application/mobimonUseCases.ts'
@@ -42,6 +44,7 @@ export function createApp({
   const mobimonRepository = new LocalStorageMobimonRepository(storage)
   const mobimon = new MobimonService(mobimonRepository, clock, ids, random)
   const organizationService = new OrganizationService(mobimonRepository)
+  const jobService = new JobService(mobimonRepository, clock, ids)
 
   // 歩数リソース変換 → Mobimon は Published Language のイベントだけでつながる
   for (const type of [
@@ -95,5 +98,11 @@ export function createApp({
     removeFromTeam: (ownedId) => organizationService.removeFromTeam(userId, ownedId),
   }
 
-  return { events, stepImport, game, organization, userId }
+  const jobs: JobUseCases = {
+    getJobs: () => jobService.getJobs(userId),
+    accept: (offerKey) => jobService.accept(userId, offerKey),
+    decline: (jobId) => jobService.decline(userId, jobId),
+  }
+
+  return { events, stepImport, game, organization, jobs, userId }
 }

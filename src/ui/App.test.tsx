@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import App from './App.tsx'
-import { fakeGame, fakeOrganization, fakeStepImport, fakeSummary } from './testFakes.ts'
+import { fakeGame, fakeJobs, fakeOrganization, fakeStepImport, fakeSummary } from './testFakes.ts'
 
 describe('App', () => {
   it('ヘッダーにエネルギー・ポイント・時間帯を表示し、ホームから始まる', () => {
@@ -9,6 +9,7 @@ describe('App', () => {
       <App
         stepImport={fakeStepImport()}
         organization={fakeOrganization()}
+        jobs={fakeJobs()}
         game={fakeGame({
           getSummary: () => fakeSummary({ energy: 131, points: 60, timeOfDay: '夜' }),
         })}
@@ -24,7 +25,12 @@ describe('App', () => {
   it('メニューで画面を切り替え、選んだ項目を示す', async () => {
     const user = userEvent.setup()
     render(
-      <App stepImport={fakeStepImport()} game={fakeGame()} organization={fakeOrganization()} />,
+      <App
+        stepImport={fakeStepImport()}
+        game={fakeGame()}
+        organization={fakeOrganization()}
+        jobs={fakeJobs()}
+      />,
     )
     await user.click(screen.getByRole('button', { name: '図鑑' }))
     expect(screen.getByRole('heading', { name: '図鑑' })).toBeInTheDocument()
@@ -37,7 +43,12 @@ describe('App', () => {
 
   it('フッターに免責事項を常時表示する', () => {
     render(
-      <App stepImport={fakeStepImport()} game={fakeGame()} organization={fakeOrganization()} />,
+      <App
+        stepImport={fakeStepImport()}
+        game={fakeGame()}
+        organization={fakeOrganization()}
+        jobs={fakeJobs()}
+      />,
     )
     const footer = screen.getByRole('contentinfo')
     expect(footer).toHaveTextContent('パロディ(二次創作)を目的としたジョークサイト')

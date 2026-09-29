@@ -1,6 +1,7 @@
 import type { DailyStepLog } from './DailyStepLog.ts'
 import type { Encounter } from './Encounter.ts'
 import type { Inventory } from './Inventory.ts'
+import type { Job } from './Job.ts'
 import type { Mobidex } from './Mobidex.ts'
 import type { Organization } from './Organization.ts'
 import type { OwnedMobimon } from './OwnedMobimon.ts'
@@ -17,6 +18,7 @@ export interface MobimonState {
   ownedMobimons: OwnedMobimon[]
   organizations: Organization[]
   dailyStepLogs: DailyStepLog[]
+  jobs: Job[]
 }
 
 export interface MobimonRepository {
@@ -33,4 +35,5 @@ export const emptyMobimonState = (): MobimonState => ({
   ownedMobimons: [],
   organizations: [],
   dailyStepLogs: [],
+  jobs: [],
 })

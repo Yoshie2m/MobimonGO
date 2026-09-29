@@ -6,7 +6,7 @@ import type { Migrations } from '../../../shared/VersionedStorage.ts'
  * 1つ前の版の見本を tests/fixtures/storage/mobimongo-mobimon/ に置く(CLAUDE.md の手順)。
  * 種の統合など、マスターデータの ID を置き換える移行もここに置く。
  */
-export const CURRENT_VERSION = 2
+export const CURRENT_VERSION = 3
 
 type Json = Record<string, unknown>
 
@@ -32,4 +32,6 @@ export const MIGRATIONS: Migrations = {
       dailyStepLogs: v1.players.map((p) => ({ playerId: p.id, entries: [] })),
     }
   },
+  /** v2 → v3: 受注した仕事を追加する(組織と仕事・段階2)。v2 のデータには仕事がない。 */
+  2: (data) => ({ ...(data as Json), jobs: [] }),
 }

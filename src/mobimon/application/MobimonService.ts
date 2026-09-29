@@ -32,7 +32,7 @@ import { findItem, itemNameOf, ITEMS } from '../masterData/items.ts'
 import { rewardForCompletion, rewardForMilestone, type Reward } from '../masterData/rewards.ts'
 import { findSpeciesOrUnknown, SPECIES } from '../masterData/species.ts'
 import { TITLES } from '../masterData/titles.ts'
-import { lookupFor } from './OrganizationService.ts'
+import { lockedFields, lookupFor } from './OrganizationService.ts'
 
 export interface OwnedMobimonView {
   id: string
@@ -339,10 +339,10 @@ export class MobimonService {
     const { mobimon } = current.evolve(from, mobimonSpeciesId(toSpeciesId))
     state.ownedMobimons[index] = mobimon
     const registration = this.register(state, ctx.pid, findSpeciesOrUnknown(mobimon.speciesId))
-    // 進化でレア度が変わり、編成の条件を満たさなくなった配置を外す
+    // 進化でレア度が変わり、編成の条件を満たさなくなった配置を外す(仕事を受けているチームはそのまま)
     const lookup = lookupFor(state, ctx.pid).lookup
     state.organizations = state.organizations.map((o) =>
-      o.playerId === ctx.pid ? o.normalize(lookup).organization : o,
+      o.playerId === ctx.pid ? o.normalize(lookup, lockedFields(state, ctx.pid)).organization : o,
     )
     this.repository.save(state)
     return { mobimon: ownedView(mobimon), fromName: from.name, ...registration }

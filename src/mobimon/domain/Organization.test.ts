@@ -184,4 +184,29 @@ describe('Organization', () => {
     expect(organization.team(THERMAL).directReports).toEqual([])
     expect(removed).toEqual(['gone'])
   })
+
+  it('仕事を受けているチームは、整えるときにも手を付けない', () => {
+    const local = roster({ leader: ['レア', THERMAL], gone: ['コモン', 'ホーム'] })
+    const org = Organization.create(PLAYER)
+      .setLeader(THERMAL, local.info('leader'), local.lookup)
+      .addDirectReport(THERMAL, local.info('gone'))
+    local.remove('gone')
+    const { organization } = org.normalize(local.lookup, new Set([THERMAL]))
+    expect(organization.team(THERMAL).directReports.map((d) => d.id)).toEqual(['gone'])
+  })
+
+  it('受注するときの編成(リーダー・サブリーダー・それ以外のメンバー)を取り出す', () => {
+    const org = Organization.create(PLAYER)
+      .setLeader(THERMAL, r.info('thermalRare'), r.lookup)
+      .addDirectReport(THERMAL, r.info('homeUncommon'))
+      .setSubLeader(THERMAL, id('homeUncommon'), true, r.lookup)
+      .addMemberUnder(THERMAL, id('homeUncommon'), r.info('a'))
+      .addDirectReport(THERMAL, r.info('b'))
+    expect(org.snapshot(THERMAL)).toEqual({
+      leader: 'thermalRare',
+      subLeaders: ['homeUncommon'],
+      members: ['a', 'b'],
+    })
+    expect(org.snapshot(POWERTRAIN)).toBeUndefined()
+  })
 })

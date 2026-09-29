@@ -11,6 +11,8 @@ import {
   titleId,
 } from '../domain/ids.ts'
 import { Inventory, type ActiveEffect } from '../domain/Inventory.ts'
+import { Job, jobId, type JobStatus } from '../domain/Job.ts'
+import type { JobRank } from '../domain/JobRank.ts'
 import type { ItemEffectKind } from '../domain/Item.ts'
 import { Mobidex } from '../domain/Mobidex.ts'
 import {
@@ -48,6 +50,21 @@ export interface Stored {
     }[]
   }[]
   dailyStepLogs: { playerId: string; entries: [string, number][] }[]
+  jobs: {
+    id: string
+    playerId: string
+    field: string
+    rank: JobRank
+    title: string
+    acceptedAt: string
+    countStartDate: string
+    deadlineDate: string
+    requiredSteps: number
+    successRate: number
+    team: { leader: string; subLeaders: string[]; members: string[] }
+    status: JobStatus
+    declinedAt: string | null
+  }[]
 }
 
 /** Mobimon コンテキストの状態を、localStorage の1つのキーにまとめて保存する。 */
@@ -131,6 +148,21 @@ export class LocalStorageMobimonRepository implements MobimonRepository {
       dailyStepLogs: s.dailyStepLogs.map((l) =>
         DailyStepLog.reconstruct(playerId(l.playerId), l.entries),
       ),
+      jobs: s.jobs
+        .filter((j) => isTeamField(j.field))
+        .map((j) =>
+          Job.reconstruct({
+            ...j,
+            id: jobId(j.id),
+            playerId: playerId(j.playerId),
+            field: j.field as Team['field'],
+            team: {
+              leader: ownedMobimonId(j.team.leader),
+              subLeaders: j.team.subLeaders.map(ownedMobimonId),
+              members: j.team.members.map(ownedMobimonId),
+            },
+          }),
+        ),
     }
   }
 
@@ -185,6 +217,25 @@ export class LocalStorageMobimonRepository implements MobimonRepository {
       dailyStepLogs: state.dailyStepLogs.map((l) => ({
         playerId: l.playerId,
         entries: [...l.entries],
+      })),
+      jobs: state.jobs.map((j) => ({
+        id: j.id,
+        playerId: j.playerId,
+        field: j.field,
+        rank: j.rank,
+        title: j.title,
+        acceptedAt: j.acceptedAt,
+        countStartDate: j.countStartDate,
+        deadlineDate: j.deadlineDate,
+        requiredSteps: j.requiredSteps,
+        successRate: j.successRate,
+        team: {
+          leader: j.team.leader,
+          subLeaders: [...j.team.subLeaders],
+          members: [...j.team.members],
+        },
+        status: j.status,
+        declinedAt: j.declinedAt,
       })),
     })
   }

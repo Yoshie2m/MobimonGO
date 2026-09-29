@@ -1,0 +1,177 @@
+{
+  "version": 3,
+  "data": {
+    "players": [
+      {
+        "id": "fixture-user",
+        "cumulativeSteps": 22686,
+        "titles": ["d-world"]
+      }
+    ],
+    "wallets": [
+      {
+        "playerId": "fixture-user",
+        "energy": 196,
+        "points": 55,
+        "processedGrantIds": ["g-1", "g-2", "g-3", "g-4"]
+      }
+    ],
+    "inventories": [
+      {
+        "playerId": "fixture-user",
+        "counts": [
+          ["aroma", 1],
+          ["food", 2]
+        ],
+        "activeEffects": [
+          [
+            "encounterBoost",
+            {
+              "itemId": "aroma",
+              "multiplier": 2,
+              "remainingUses": 2
+            }
+          ]
+        ],
+        "pending": []
+      }
+    ],
+    "mobidexes": [
+      {
+        "playerId": "fixture-user",
+        "registered": ["M001", "M002", "M003", "M017", "M144", "M151"],
+        "achievements": ["milestone:special"]
+      }
+    ],
+    "encounters": [
+      {
+        "id": "e-1",
+        "playerId": "fixture-user",
+        "speciesId": "M001",
+        "state": "捕獲済み"
+      }
+    ],
+    "ownedMobimons": [
+      {
+        "id": "o-1",
+        "playerId": "fixture-user",
+        "speciesId": "M002",
+        "experience": 2350
+      },
+      {
+        "id": "o-2",
+        "playerId": "fixture-user",
+        "speciesId": "M151",
+        "experience": 0
+      },
+      {
+        "id": "o-3",
+        "playerId": "fixture-user",
+        "speciesId": "M017",
+        "experience": 9500
+      },
+      {
+        "id": "o-4",
+        "playerId": "fixture-user",
+        "speciesId": "M003",
+        "experience": 0
+      },
+      {
+        "id": "o-5",
+        "playerId": "fixture-user",
+        "speciesId": "M144",
+        "experience": 0
+      },
+      {
+        "id": "o-6",
+        "playerId": "fixture-user",
+        "speciesId": "M001",
+        "experience": 0
+      }
+    ],
+    "organizations": [
+      {
+        "playerId": "fixture-user",
+        "teams": [
+          {
+            "field": "サーマルマネジメント&エアコンシステム",
+            "leader": "o-3",
+            "directReports": [
+              {
+                "id": "o-4",
+                "isSubLeader": true,
+                "members": ["o-6"]
+              },
+              {
+                "id": "o-2",
+                "isSubLeader": false,
+                "members": []
+              }
+            ]
+          },
+          {
+            "field": "パワートレインシステム",
+            "leader": null,
+            "directReports": []
+          },
+          {
+            "field": "セーフティ&コックピットシステム",
+            "leader": null,
+            "directReports": []
+          }
+        ]
+      }
+    ],
+    "dailyStepLogs": [
+      {
+        "playerId": "fixture-user",
+        "entries": [
+          ["2026-09-04", 13186],
+          ["2026-09-20", 9500],
+          ["2026-09-25", 12000],
+          ["2026-09-26", 8000]
+        ]
+      }
+    ],
+    "jobs": [
+      {
+        "id": "j-1",
+        "playerId": "fixture-user",
+        "field": "サーマルマネジメント&エアコンシステム",
+        "rank": "S",
+        "title": "クルマ全体の熱を最適にめぐらせる",
+        "acceptedAt": "2026-09-10T01:00:00.000Z",
+        "countStartDate": "2026-09-10",
+        "deadlineDate": "2026-09-16",
+        "requiredSteps": 91000,
+        "successRate": 60,
+        "team": {
+          "leader": "o-3",
+          "subLeaders": ["o-4"],
+          "members": ["o-2", "o-6"]
+        },
+        "status": "辞退",
+        "declinedAt": "2026-09-10T02:00:00.000Z"
+      },
+      {
+        "id": "j-2",
+        "playerId": "fixture-user",
+        "field": "サーマルマネジメント&エアコンシステム",
+        "rank": "A",
+        "title": "電気自動車の熱をまとめて管理する",
+        "acceptedAt": "2026-09-25T00:00:00.000Z",
+        "countStartDate": "2026-09-25",
+        "deadlineDate": "2026-10-01",
+        "requiredSteps": 70000,
+        "successRate": 75,
+        "team": {
+          "leader": "o-3",
+          "subLeaders": ["o-4"],
+          "members": ["o-2", "o-6"]
+        },
+        "status": "進行中",
+        "declinedAt": null
+      }
+    ]
+  }
+}

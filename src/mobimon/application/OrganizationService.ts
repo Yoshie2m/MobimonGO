@@ -34,6 +34,8 @@ export interface DirectReportView {
 
 export interface TeamView {
   field: TeamField
+  /** 仕事を受けていて、組み替えられない。 */
+  locked: boolean
   leader: TeamMemberView | null
   /** リーダーのレア度で受注できる仕事のランク。 */
   acceptableRanks: JobRank[]
@@ -66,6 +68,7 @@ export class OrganizationService {
     const state = this.repository.load()
     const { organization, members, lookup } = this.context(state, id)
     const assigned = new Set<string>(organization.assignedIds)
+    const locked = lockedFields(state, toPlayerId(id))
     const unassigned = [...members.values()].filter((m) => !assigned.has(m.id))
 
     const teams = organization.teams.map((team): TeamView => {
@@ -75,6 +78,7 @@ export class OrganizationService {
       const view = (mid: string) => members.get(mid)!
       return {
         field: team.field,
+        locked: locked.has(team.field),
         leader: team.leader ? view(team.leader) : null,
         acceptableRanks: acceptableRanks(leaderInfo?.rarity ?? null),
         maxSubLeaders: limit,
@@ -100,36 +104,54 @@ export class OrganizationService {
   }
 
   setLeader(id: string, field: string, ownedId: string): void {
-    this.update(id, (org, lookup) => org.setLeader(teamField(field), info(lookup, ownedId), lookup))
+    this.update(id, field, (org, lookup) =>
+      org.setLeader(teamField(field), info(lookup, ownedId), lookup),
+    )
   }
 
   addDirectReport(id: string, field: string, ownedId: string): void {
-    this.update(id, (org, lookup) => org.addDirectReport(teamField(field), info(lookup, ownedId)))
+    this.update(id, field, (org, lookup) =>
+      org.addDirectReport(teamField(field), info(lookup, ownedId)),
+    )
   }
 
   setSubLeader(id: string, field: string, ownedId: string, isSubLeader: boolean): void {
-    this.update(id, (org, lookup) =>
+    this.update(id, field, (org, lookup) =>
       org.setSubLeader(teamField(field), ownedMobimonId(ownedId), isSubLeader, lookup),
     )
   }
 
   addMemberUnder(id: string, field: string, subLeaderId: string, ownedId: string): void {
-    this.update(id, (org, lookup) =>
+    this.update(id, field, (org, lookup) =>
       org.addMemberUnder(teamField(field), ownedMobimonId(subLeaderId), info(lookup, ownedId)),
     )
   }
 
   removeFromTeam(id: string, ownedId: string): void {
+    const state = this.repository.load()
+    const { organization } = this.context(state, id)
+    const field = organization.positionOf(ownedMobimonId(ownedId))?.field
     this.update(
       id,
-      (org, lookup) => org.remove(ownedMobimonId(ownedId)).normalize(lookup).organization,
+      field,
+      (org, lookup, locked) =>
+        org.remove(ownedMobimonId(ownedId)).normalize(lookup, locked).organization,
     )
   }
 
-  private update(id: string, fn: (org: Organization, lookup: MobimonLookup) => Organization) {
+  /** field のチームを変える。仕事を受けている間は組み替えられない。 */
+  private update(
+    id: string,
+    field: string | undefined,
+    fn: (org: Organization, lookup: MobimonLookup, locked: Set<TeamField>) => Organization,
+  ) {
     const state = this.repository.load()
     const { pid, organization, lookup } = this.context(state, id)
-    const next = fn(organization, lookup)
+    const locked = lockedFields(state, pid)
+    if (field !== undefined && isTeamField(field) && locked.has(field)) {
+      throw new DomainError('仕事を受けている間は、このチームを組み替えられません')
+    }
+    const next = fn(organization, lookup, locked)
     state.organizations = state.organizations.map((o) => (o.playerId === pid ? next : o))
     this.repository.save(state)
   }
@@ -162,6 +184,16 @@ export function lookupFor(state: MobimonState, pid: PlayerId) {
     return { id: m.id, rarity: species.rarity, businessField: species.businessField }
   }
   return { members, lookup }
+}
+
+/**
+ * 仕事を受けている(組み替えられない)チームの事業分野。
+ * 判定(段階3)までは、歩き切った・納期切れの仕事もチームを使っている。
+ */
+export function lockedFields(state: MobimonState, pid: PlayerId): Set<TeamField> {
+  return new Set(
+    state.jobs.filter((j) => j.playerId === pid && j.status === '進行中').map((j) => j.field),
+  )
 }
 
 function teamField(field: string): TeamField {
