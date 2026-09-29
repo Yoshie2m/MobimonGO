@@ -31,20 +31,20 @@ test('さがす → 捕まえる → 図鑑 → 育てる → 購入して使う
   await menu(page, 'ショップ').click()
   await page
     .locator('.mm-card')
-    .filter({ has: page.getByText('おさんぽアロマ', { exact: true }) })
+    .filter({ has: page.getByText('はちみつアロマ', { exact: true }) })
     .getByRole('button', { name: '購入する' })
     .click()
-  await expect(page.getByText('おさんぽアロマを購入しました')).toBeVisible()
+  await expect(page.getByText('はちみつアロマを購入しました')).toBeVisible()
   await expect(header(page)).toContainText('ポイント100pt')
   await page
     .locator('.mm-card')
-    .filter({ has: page.getByText('おさんぽアロマ', { exact: true }) })
+    .filter({ has: page.getByText('はちみつアロマ', { exact: true }) })
     .getByRole('button', { name: '使う' })
     .click()
-  await expect(page.getByText('おさんぽアロマを使いました')).toBeVisible()
+  await expect(page.getByText('はちみつアロマを使いました')).toBeVisible()
 
   await menu(page, 'ホーム').click()
-  await expect(page.getByText('おさんぽアロマ(×2、あと 3回)')).toBeVisible()
+  await expect(page.getByText('はちみつアロマ(×2、あと 3回)')).toBeVisible()
 
   // 再読み込みしても残る
   await page.reload()
