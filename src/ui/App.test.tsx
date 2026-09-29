@@ -29,4 +29,12 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: '歩数' }))
     expect(screen.getByRole('heading', { name: '歩数の取り込み' })).toBeInTheDocument()
   })
+
+  it('フッターに免責事項を常時表示する', () => {
+    render(<App stepImport={fakeStepImport()} game={fakeGame()} />)
+    const footer = screen.getByRole('contentinfo')
+    expect(footer).toHaveTextContent('パロディ(二次創作)を目的としたジョークサイト')
+    expect(footer).toHaveTextContent('公式のデータは一切使用しておりません')
+    expect(footer).toHaveTextContent('製作者は一切の責任を負いません')
+  })
 })

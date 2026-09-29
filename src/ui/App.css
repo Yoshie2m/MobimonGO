@@ -198,6 +198,14 @@ p {
   flex: none;
 }
 
+.app-footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+}
+
 .list {
   margin: 0;
   padding-left: 1.2em;
