@@ -13,13 +13,13 @@ export const ITEM_IDS = {
 export const ITEMS: readonly Item[] = [
   {
     id: ITEM_IDS.aroma,
-    name: 'おさんぽアロマ',
+    name: 'はちみつアロマ',
     price: point(30),
     effect: { kind: 'encounterBoost', multiplier: 2, uses: 3 },
   },
   {
     id: ITEM_IDS.aromaPlus,
-    name: 'おさんぽアロマ+',
+    name: '藻由来アロマ',
     price: point(80),
     effect: { kind: 'encounterBoost', multiplier: 3, uses: 5 },
   },

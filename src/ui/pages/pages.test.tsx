@@ -107,7 +107,7 @@ describe('ShopPage', () => {
       listShop: () => [
         {
           itemId: 'aroma',
-          name: 'おさんぽアロマ',
+          name: 'はちみつアロマ',
           price: 30,
           kind: 'encounterBoost',
           multiplier: 2,

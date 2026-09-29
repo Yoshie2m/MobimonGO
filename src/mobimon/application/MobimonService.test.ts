@@ -254,7 +254,7 @@ describe('図鑑の報酬', () => {
     expect(service.getSummary(USER).titles).toEqual(['Dワールドの覇者'])
   })
 
-  it('登録が 10種に達するとおさんぽアロマを受け取る', () => {
+  it('登録が 10種に達するとはちみつアロマを受け取る', () => {
     const { service, repository } = setup()
     const names = SPECIES.filter((s) => s.evolutionLevel === 10)
       .slice(0, 10)
@@ -267,7 +267,7 @@ describe('図鑑の報酬', () => {
     expect(results.at(-1)?.rewards).toEqual([
       {
         reason: '図鑑の登録が 10種に達しました',
-        items: [{ name: 'おさんぽアロマ', quantity: 1 }],
+        items: [{ name: 'はちみつアロマ', quantity: 1 }],
         title: null,
       },
     ])
