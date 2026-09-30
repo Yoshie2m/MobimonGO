@@ -51,7 +51,7 @@ describe('App', () => {
       />,
     )
     const footer = screen.getByRole('contentinfo')
-    expect(footer).toHaveTextContent('パロディ(二次創作)を目的としたジョークサイト')
+    expect(footer).toHaveTextContent('個人が制作したジョークサイトであり')
     expect(footer).toHaveTextContent('公式のデータは一切使用しておりません')
     expect(footer).toHaveTextContent('製作者は一切の責任を負いません')
   })

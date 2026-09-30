@@ -49,7 +49,7 @@ function App({ stepImport, game, organization, jobs }: Props) {
       <header className="app-header">
         <div className="app-header__brand">
           <img src={ICONS.mobility} width={32} height={32} alt="" />
-          <h1 className="heading">MobimonGO</h1>
+          <h1 className="heading">Mobimon</h1>
         </div>
         <div className="app-header__status" aria-label="いまの状態">
           <span className="status-chip">
@@ -95,7 +95,7 @@ function App({ stepImport, game, organization, jobs }: Props) {
 
       <footer className="app-footer caption muted">
         <p>
-          本サイトは個人が制作したパロディ(二次創作)を目的としたジョークサイトであり、実在のいかなる企業、団体、および既存のゲーム作品(「ポケモンGO」等)とも一切関係ありません。
+          本サイトは個人が制作したジョークサイトであり、実在のいかなる企業、団体、および既存のゲーム作品とも一切関係ありません。
         </p>
         <p>
           本サイト内で使用されているイラスト、キャラクター、システム等はすべて独自に作成されたものであり、公式のデータは一切使用しておりません。
