@@ -14,7 +14,9 @@ test('初回の起動: ホームを表示し、エネルギー 0・利用開始�
   await menu(page, '歩数').click()
   await expect(page.getByText(`利用開始日 ${TODAY}`)).toBeVisible()
 
-  await expect(page.getByRole('contentinfo')).toContainText('個人が制作したジョークサイトであり')
+  await expect(page.getByRole('contentinfo')).toContainText(
+    '個人が趣味で制作したオリジナルのゲームサイトであり',
+  )
 })
 
 test('キーボード操作: Tab でメニューに移動でき、フォーカスの枠(ink の 2px)が見える', async ({
