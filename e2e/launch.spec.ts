@@ -29,3 +29,20 @@ test('キーボード操作: Tab でメニューに移動でき、フォーカ�
   await expect(focused).toHaveCSS('outline-width', '2px')
   await expect(focused).toHaveCSS('outline-color', 'rgb(58, 47, 34)')
 })
+
+test('メニューの並び: スマホ幅では4個ずつ2段、PC幅では1段になる', async ({ page }) => {
+  const labels = ['ホーム', '歩数', 'さがす', 'なかま', '組織', '仕事', 'ショップ', '図鑑']
+  const topsAt = async (width: number) => {
+    await page.setViewportSize({ width, height: 800 })
+    const boxes = await Promise.all(labels.map((label) => menu(page, label).boundingBox()))
+    return boxes.map((box) => box!.y)
+  }
+
+  const mobileTops = await topsAt(375)
+  expect(new Set(mobileTops.slice(0, 4)).size).toBe(1)
+  expect(new Set(mobileTops.slice(4)).size).toBe(1)
+  expect(mobileTops[0]).not.toBe(mobileTops[4])
+
+  const wideTops = await topsAt(1024)
+  expect(new Set(wideTops).size).toBe(1)
+})

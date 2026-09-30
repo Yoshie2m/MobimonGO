@@ -70,8 +70,8 @@ p {
 }
 
 .nav {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: var(--space-1);
   padding: var(--space-1);
   background: var(--surface-200);
@@ -80,10 +80,15 @@ p {
   box-shadow: var(--shadow-card);
 }
 
+@media (min-width: 768px) {
+  .nav {
+    grid-template-columns: repeat(8, 1fr);
+  }
+}
+
 .nav__item {
-  flex: 1 1 auto;
   min-height: 40px;
-  padding: 0 var(--space-3);
+  padding: 0 var(--space-2);
   border: none;
   border-radius: var(--radius-sm);
   background: transparent;
