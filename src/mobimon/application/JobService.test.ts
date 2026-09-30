@@ -108,11 +108,11 @@ describe('JobService', () => {
         field: THERMAL,
         rank: 'A',
         countStartDate: '2026-09-28',
-        deadlineDate: '2026-10-04',
-        requiredSteps: 70_000,
+        deadlineDate: '2026-09-30',
+        requiredSteps: 30_000,
         progress: 0,
-        remaining: 70_000,
-        daysLeft: 7,
+        remaining: 30_000,
+        daysLeft: 3,
         stepsPerDay: 10_000,
         phase: '進行中',
         successRate: 75,
@@ -130,24 +130,24 @@ describe('JobService', () => {
     expect(jobs.getJobs(USER).activeJobs[0]).toMatchObject({
       countStartDate: '2026-09-29',
       progress: 0,
-      daysLeft: 7,
+      daysLeft: 3,
     })
   })
 
   it('取り込んだ歩数で進み、歩き切ったら「歩き切った」になる', () => {
     const { jobs, offer, walk, setNow } = withThermalTeam()
     jobs.accept(USER, offer(THERMAL, 'A').key)
-    walk('2026-09-28', 20_000)
+    walk('2026-09-28', 12_000)
     setNow(new Date(2026, 8, 29, 12))
-    walk('2026-09-29', 10_000)
+    walk('2026-09-29', 9_000)
     expect(jobs.getJobs(USER).activeJobs[0]).toMatchObject({
-      progress: 30_000,
-      remaining: 40_000,
-      daysLeft: 6,
-      stepsPerDay: 6_667,
+      progress: 21_000,
+      remaining: 9_000,
+      daysLeft: 2,
+      stepsPerDay: 4_500,
     })
     setNow(new Date(2026, 9, 1, 20))
-    for (const d of ['2026-09-30', '2026-10-01']) walk(d, 20_000)
+    walk('2026-09-30', 20_000)
     expect(jobs.getJobs(USER).activeJobs[0].phase).toBe('歩き切った')
   })
 
@@ -192,7 +192,7 @@ describe('JobService', () => {
   })
 
   describe('判定', () => {
-    /** A ランクを受注し、納期内に歩き切る(9/28〜10/1 に 20,000歩ずつ)。 */
+    /** A ランクを受注し、納期(9/28〜9/30)内に歩き切る。 */
     const walkThrough = (t: ReturnType<typeof withThermalTeam>) => {
       t.jobs.accept(USER, t.offer(THERMAL, 'A').key)
       t.setNow(new Date(2026, 9, 1, 21))
@@ -208,14 +208,14 @@ describe('JobService', () => {
       expect(() => t.jobs.judge(USER, job.id)).toThrow('まだ判定できません')
     })
 
-    it('成功すると、チームの全員に経験値 300 と、ヘッドハンティングの権利2件(A ランク)が入り、チームが空く', () => {
+    it('成功すると、チームの全員に経験値 450 と、ヘッドハンティングの権利2件(A ランク)が入り、チームが空く', () => {
       const t = withThermalTeam(() => 0.74) // 成功の確率 75% の内側
       const job = walkThrough(t)
       expect(job.canJudge).toBe(true)
       const result = t.jobs.judge(USER, job.id)
       expect(result).toMatchObject({ success: true, headhuntingRights: 2, rested: null })
       expect(result.experience).toHaveLength(4)
-      expect(result.experience.every((e) => e.gained === 300)).toBe(true)
+      expect(result.experience.every((e) => e.gained === 450)).toBe(true)
       const levels = t.game.listOwnedMobimon(USER).map((m) => m.level)
       expect(levels).toEqual([20, 4, 4, 4])
 

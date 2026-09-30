@@ -22,7 +22,7 @@ test('仕事: 超レアのリーダーのチームで A ランクを受注し、
 
   const board = page.getByRole('region', { name: `${THERMAL}の仕事` })
   const rankA = board.locator('.team-member').filter({ hasText: 'A ランク' })
-  await expect(rankA).toContainText('7日で 70,000歩・成功の確率 75%')
+  await expect(rankA).toContainText('3日で 30,000歩・成功の確率 75%')
   await expect(board.locator('.team-member').filter({ hasText: 'C ランク' })).toContainText(
     'C ランクの仕事を受けられません',
   )
@@ -34,14 +34,14 @@ test('仕事: 超レアのリーダーのチームで A ランクを受注し、
   await rankA.getByRole('button', { name: '受注する' }).click()
   await expect(page.getByText(/を受注しました/)).toBeVisible()
   const job = page.getByRole('region', { name: /^受けている仕事: / })
-  await expect(job).toContainText('0 / 70,000歩')
-  await expect(job).toContainText('残り 70,000歩・あと 7日(1日あたり約 10,000歩)')
+  await expect(job).toContainText('0 / 30,000歩')
+  await expect(job).toContainText('残り 30,000歩・あと 3日(1日あたり約 10,000歩)')
   await expect(board.getByRole('button', { name: '受注する' })).toHaveCount(0)
 
   // 受注した日の歩数を取り込むと進む
   await importManually(page, TODAY, '12,000')
   await menu(page, '仕事').click()
-  await expect(job).toContainText('12,000 / 70,000歩')
+  await expect(job).toContainText('12,000 / 30,000歩')
 
   // 受けている間は組み替えられない
   await menu(page, '組織').click()
@@ -87,9 +87,9 @@ test('仕事: 受注 → 歩数の取り込み → 結果 → ヘッドハンテ
     .getByRole('button', { name: '受注する' })
     .click()
 
-  // 4日後の夜に、それまでの歩数を取り込む(1日 20,000歩 × 4日 = 80,000歩)
-  await page.clock.setFixedTime(new Date('2026-10-01T20:00:00+09:00'))
-  for (const date of [TODAY, '2026-09-29', '2026-09-30', '2026-10-01']) {
+  // 3日後の夜に、それまでの歩数を取り込む(1日 20,000歩 × 3日 = 60,000歩)
+  await page.clock.setFixedTime(new Date('2026-09-30T20:00:00+09:00'))
+  for (const date of [TODAY, '2026-09-29', '2026-09-30']) {
     await importManually(page, date, '20,000')
   }
   await menu(page, '仕事').click()
@@ -99,7 +99,7 @@ test('仕事: 受注 → 歩数の取り込み → 結果 → ヘッドハンテ
 
   const result = page.getByRole('region', { name: '仕事の結果' })
   await expect(result).toContainText('仕事に成功しました')
-  await expect(result).toContainText('ゼンネツオウ: 経験値 ▲ 300')
+  await expect(result).toContainText('ゼンネツオウ: 経験値 ▲ 450')
   await expect(result).toContainText('ヘッドハンティングの権利を 2件')
   await expect(page.getByText('受けている仕事はありません')).toBeVisible()
 

@@ -1,7 +1,7 @@
 import { DomainError } from '../../shared/DomainError.ts'
 import type { DailyStepLog } from './DailyStepLog.ts'
 import type { PlayerId } from './ids.ts'
-import { RANK_RULES, type JobRank } from './JobRank.ts'
+import { pickVariant, type JobRank } from './JobRank.ts'
 import type { TeamField, TeamSnapshotLike } from './Organization.ts'
 
 export type JobId = string & { readonly __brand: 'JobId' }
@@ -102,7 +102,7 @@ export class Job {
     team: TeamSnapshot
     successRate: number
   }): Job {
-    const rule = RANK_RULES[p.offer.rank]
+    const variant = pickVariant(p.offer.date, p.offer.field, p.offer.rank)
     // 受注した時点でその日の歩数を取り込み済みなら、翌日から数える(夜に歩いたあとで受注する抜け道を防ぐ)
     const countStartDate = p.log.hasRecorded(p.today) ? addDays(p.today, 1) : p.today
     return new Job({
@@ -113,8 +113,8 @@ export class Job {
       title: p.offer.title,
       acceptedAt: p.now.toISOString(),
       countStartDate,
-      deadlineDate: addDays(countStartDate, rule.days - 1),
-      requiredSteps: rule.requiredSteps,
+      deadlineDate: addDays(countStartDate, variant.days - 1),
+      requiredSteps: variant.requiredSteps,
       successRate: p.successRate,
       team: p.team,
       status: '進行中',

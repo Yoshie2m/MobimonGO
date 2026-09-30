@@ -19,7 +19,13 @@ import {
   type JobPhase,
 } from '../domain/Job.ts'
 import { OwnedMobimon } from '../domain/OwnedMobimon.ts'
-import { acceptableRanks, generateJobBoard, RANK_RULES, type JobRank } from '../domain/JobRank.ts'
+import {
+  acceptableRanks,
+  generateJobBoard,
+  pickVariant,
+  RANK_RULES,
+  type JobRank,
+} from '../domain/JobRank.ts'
 import type { MobimonState } from '../domain/MobimonRepository.ts'
 import type { MobimonRepository } from '../domain/MobimonRepository.ts'
 import { TEAM_FIELDS, type TeamField, type TeamSnapshotLike } from '../domain/Organization.ts'
@@ -123,13 +129,14 @@ export class JobService {
     const board = todaysBoard(today).map((offer): JobOfferView => {
       const team = ctx.organization.snapshot(offer.field)
       const rule = RANK_RULES[offer.rank]
+      const variant = pickVariant(offer.date, offer.field, offer.rank)
       return {
         key: offer.key,
         field: offer.field,
         rank: offer.rank,
         title: offer.title,
-        days: rule.days,
-        requiredSteps: rule.requiredSteps,
+        days: variant.days,
+        requiredSteps: variant.requiredSteps,
         successRate: team ? successRate(rule, strength(state, team, today)) : null,
         unavailableReason: this.acceptBlocker(state, ctx, offer, today) ?? null,
       }
@@ -224,6 +231,9 @@ export class JobService {
     const { job, outcome } = target.judge({ log: ctx.log, today, now, random: this.random })
     state.jobs[index] = job
     const rule = RANK_RULES[job.rank]
+    // 受注したときの候補(納期・業務達成歩数の組)を、固定された requiredSteps から特定する
+    const variant =
+      rule.variants.find((v) => v.requiredSteps === job.requiredSteps) ?? rule.variants[0]
     const owned = (oid: string) =>
       state.ownedMobimons.findIndex((o) => o.id === oid && o.playerId === ctx.pid)
     const nameOf = (m: OwnedMobimon) => findSpeciesOrUnknown(m.speciesId).name
@@ -243,7 +253,7 @@ export class JobService {
       for (const oid of team) {
         const i = owned(oid)
         if (i < 0 || state.ownedMobimons[i].isResting(today)) continue
-        const { mobimon, event } = state.ownedMobimons[i].gainExperience(rule.experience)
+        const { mobimon, event } = state.ownedMobimons[i].gainExperience(variant.experience)
         state.ownedMobimons[i] = mobimon
         result.experience.push({
           name: nameOf(mobimon),

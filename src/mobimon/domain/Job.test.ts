@@ -2,7 +2,7 @@ import { DomainError } from '../../shared/DomainError.ts'
 import { DailyStepLog } from './DailyStepLog.ts'
 import { ownedMobimonId } from './ids.ts'
 import { addDays, daysBetween, Job, jobId, type JobOffer } from './Job.ts'
-import { generateJobBoard, JOB_RANKS, RANK_RULES } from './JobRank.ts'
+import { generateJobBoard, JOB_RANKS, pickVariant, RANK_RULES } from './JobRank.ts'
 import { TEAM_FIELDS } from './Organization.ts'
 import { successRate } from './SuccessRate.ts'
 import { PLAYER } from './testHelpers.ts'
@@ -32,29 +32,30 @@ const accept = (log = DailyStepLog.create(PLAYER), rank: JobOffer['rank'] = 'C')
 describe('Job', () => {
   it('受注した日の歩数をまだ取り込んでいなければ、受注した日から数える', () => {
     const job = accept()
-    expect([job.countStartDate, job.deadlineDate]).toEqual(['2026-09-28', '2026-09-30'])
+    expect([job.countStartDate, job.deadlineDate]).toEqual(['2026-09-28', '2026-09-28'])
   })
 
   it('受注した時点でその日の歩数を取り込み済みなら、翌日から数える', () => {
     const job = accept(DailyStepLog.create(PLAYER).record('2026-09-28', 15_000))
-    expect([job.countStartDate, job.deadlineDate]).toEqual(['2026-09-29', '2026-10-01'])
+    expect([job.countStartDate, job.deadlineDate]).toEqual(['2026-09-29', '2026-09-29'])
   })
 
-  it('納期と業務達成歩数はランクで決まり、受注したときの値で固定する', () => {
+  it('納期と業務達成歩数は、掲示板の候補(日付・分野・ランクで決まる)で固定する', () => {
     for (const rank of JOB_RANKS) {
       const job = accept(undefined, rank)
-      expect(daysBetween(job.countStartDate, job.deadlineDate) + 1).toBe(RANK_RULES[rank].days)
-      expect(job.requiredSteps).toBe(RANK_RULES[rank].requiredSteps)
+      const variant = pickVariant('2026-09-28', 'パワートレイン', rank)
+      expect(daysBetween(job.countStartDate, job.deadlineDate) + 1).toBe(variant.days)
+      expect(job.requiredSteps).toBe(variant.requiredSteps)
     }
   })
 
   it('進み具合は、数え始める日から納期(または今日)までの日ごとの歩数の合計', () => {
-    const job = accept()
+    const job = accept(undefined, 'S') // S: 4日
     const log = DailyStepLog.create(PLAYER)
       .record('2026-09-27', 9_999) // 数え始める前
       .record('2026-09-28', 8_000)
       .record('2026-09-29', 20_000) // 上限で頭打ちにした値が届く
-      .record('2026-10-01', 7_000) // 納期の後
+      .record('2026-10-02', 7_000) // 納期(10/1)の後
     expect(job.progress(log, '2026-09-28')).toBe(8_000)
     expect(job.progress(log, '2026-10-05')).toBe(28_000)
   })
@@ -70,7 +71,7 @@ describe('Job', () => {
     const job = accept()
     const log = DailyStepLog.create(PLAYER).record('2026-09-28', 20_000)
     expect(job.phase(log, '2026-09-28')).toBe('歩き切った')
-    expect(job.phase(DailyStepLog.create(PLAYER), '2026-09-30')).toBe('進行中')
+    expect(job.phase(DailyStepLog.create(PLAYER), '2026-09-28')).toBe('進行中')
     expect(job.phase(DailyStepLog.create(PLAYER), '2026-10-01')).toBe('納期切れ')
   })
 
@@ -109,7 +110,7 @@ describe('Job.judge', () => {
   })
 
   it('納期までに歩き切れなければ失敗(確率は使わない)', () => {
-    const log = DailyStepLog.create(PLAYER).record('2026-09-28', 19_999)
+    const log = DailyStepLog.create(PLAYER).record('2026-09-28', 7_999)
     expect(judge(log, '2026-10-01').outcome).toEqual({
       success: false,
       reason: '納期に間に合わなかった',
@@ -117,7 +118,7 @@ describe('Job.judge', () => {
   })
 
   it('まだ進行中なら判定できない。判定は1回だけ', () => {
-    expect(() => judge(DailyStepLog.create(PLAYER), '2026-09-30')).toThrow('まだ判定できません')
+    expect(() => judge(DailyStepLog.create(PLAYER), '2026-09-28')).toThrow('まだ判定できません')
     const { job } = judge(walked, '2026-09-28')
     expect(job.status).toBe('成功')
     expect(() =>
