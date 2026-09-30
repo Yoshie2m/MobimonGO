@@ -38,7 +38,7 @@ describe('LocalStorageMobimonRepository', () => {
         OwnedMobimon.reconstruct(ownedMobimonId('o1'), p, SPECIES[0].id, 250).rest('2026-10-01'),
       ],
       organizations: [
-        Organization.create(p).addDirectReport('パワートレインシステム', {
+        Organization.create(p).addDirectReport('パワートレイン', {
           id: ownedMobimonId('o1'),
           rarity: 'コモン',
           businessField: SPECIES[0].businessField,
@@ -50,9 +50,9 @@ describe('LocalStorageMobimonRepository', () => {
           id: jobId('j1'),
           playerId: p,
           offer: {
-            key: '2026-09-28/パワートレインシステム/C',
+            key: '2026-09-28/パワートレイン/C',
             date: '2026-09-28',
-            field: 'パワートレインシステム',
+            field: 'パワートレイン',
             rank: 'C',
             title: '燃料ポンプの調子を確かめる',
           },
@@ -67,7 +67,7 @@ describe('LocalStorageMobimonRepository', () => {
         {
           id: headhuntingRightId('h1'),
           playerId: p,
-          field: 'パワートレインシステム',
+          field: 'パワートレイン',
           rank: 'A',
           grantedAt: '2026-09-28T03:00:00.000Z',
         },
@@ -88,15 +88,15 @@ describe('LocalStorageMobimonRepository', () => {
     expect(loaded.encounters[0].state).toBe('出現中')
     expect(loaded.ownedMobimons[0].level).toBe(3)
     expect(loaded.ownedMobimons[0].isResting('2026-09-30')).toBe(true)
-    expect(JSON.parse(localStorage.getItem(MOBIMON_STORAGE_KEY)!).version).toBe(4)
+    expect(JSON.parse(localStorage.getItem(MOBIMON_STORAGE_KEY)!).version).toBe(5)
     expect(loaded.organizations[0].positionOf(ownedMobimonId('o1'))).toEqual({
-      field: 'パワートレインシステム',
+      field: 'パワートレイン',
       role: 'メンバー',
     })
     expect(loaded.dailyStepLogs[0].stepsOn('2026-09-28')).toBe(12_000)
     expect(loaded.jobs[0]).toMatchObject({
       id: 'j1',
-      field: 'パワートレインシステム',
+      field: 'パワートレイン',
       rank: 'C',
       countStartDate: '2026-09-28',
       deadlineDate: '2026-09-30',
@@ -110,7 +110,7 @@ describe('LocalStorageMobimonRepository', () => {
       {
         id: 'h1',
         playerId: 'user-1',
-        field: 'パワートレインシステム',
+        field: 'パワートレイン',
         rank: 'A',
         grantedAt: '2026-09-28T03:00:00.000Z',
       },

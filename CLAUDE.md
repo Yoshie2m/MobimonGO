@@ -68,7 +68,7 @@ GitHub Actions(`.github/workflows/`)で、次を自動で確かめている。pu
 4. 新しい版の見本 `v<新しい版>.json` を追加する(古い版の見本は消さない)。
 5. `npm test` で、すべての版の見本が最新まで移行して読み込めることを確かめる(`src/storageMigrations.test.ts`)。
 
-マスターデータ(種・アイテム・称号)の ID は変えず、使い回さない。種をなくすときは `MOBIMON_LIST.md` の出現時間帯を「出現しない」にする。種・アイテム・称号を追加したら `tests/fixtures/master/published-ids.json` にも追加する。
+マスターデータ(種・アイテム・称号)の ID は変えず、使い回さない。事業分野は保存データに名前ではなく ID(`src/mobimon/infrastructure/fieldStorageIds.ts`)で書くので、分野の名前を変えても移行は要らない(ID は変えない)。種をなくすときは `MOBIMON_LIST.md` の出現時間帯を「出現しない」にする。種・アイテム・称号を追加したら `tests/fixtures/master/published-ids.json` にも追加する。
 
 ## 依存の向きのルール
 

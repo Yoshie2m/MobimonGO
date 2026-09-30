@@ -17,7 +17,7 @@ Claude Design で作成したデザインシステム「Mobimon」を、この�
 
 事業分野とアイコンの対応(`icons.ts`): サーマル → thermal-system、パワートレイン → motor-control、
 セーフティ&コックピット → mobility、半導体 → advanced-device、補修・修理 → repair、
-インダストリー → factory-automation、フードバリューチェーン → food-value-chain、ホーム → home。
+インダストリー → factory-automation、フードバリュー → food-value-chain、スマートホーム → home。
 全8分野にアイコンが揃っている。
 
 タグ・進み具合のバー・お知らせなど、デザインシステムにない部品は `src/ui/components/` にトークンだけを使って作っている。

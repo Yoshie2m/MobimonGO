@@ -21,7 +21,7 @@ describe('図鑑の報酬', () => {
   })
 
   it('事業分野コンプリート: その分野の称号 + アロマ+ ×1 + フード+ ×1', () => {
-    const reward = rewardForCompletion({ kind: 'field', field: 'ホーム' })
+    const reward = rewardForCompletion({ kind: 'field', field: 'スマートホーム' })
     expect(titleName(reward.titleId)).toBe('暮らしの達人')
     expect(reward.items).toEqual([
       { itemId: ITEM_IDS.aromaPlus, quantity: 1 },

@@ -1,4 +1,10 @@
 import { VersionedStorage, type KeyValueStorage } from '../../shared/VersionedStorage.ts'
+import {
+  achievementFromStorage,
+  achievementToStorage,
+  fieldFromStorageId,
+  fieldToStorageId,
+} from './fieldStorageIds.ts'
 import { CURRENT_VERSION, MIGRATIONS } from './migrations/index.ts'
 import { Encounter, type EncounterState } from '../domain/Encounter.ts'
 import {
@@ -29,7 +35,10 @@ import { Wallet } from '../domain/Wallet.ts'
 
 export const MOBIMON_STORAGE_KEY = 'mobimongo:mobimon'
 
-/** 保存形式(最新の版)。形式を変えたら migrations/ の版を上げる。 */
+/**
+ * 保存形式(最新の版)。形式を変えたら migrations/ の版を上げる。
+ * 事業分野は名前ではなく ID(fieldStorageIds.ts)で保存する。
+ */
 export interface Stored {
   players: { id: string; cumulativeSteps: number; titles: string[] }[]
   wallets: { playerId: string; energy: number; points: number; processedGrantIds: string[] }[]
@@ -125,7 +134,7 @@ export class LocalStorageMobimonRepository implements MobimonRepository {
         Mobidex.reconstruct(
           playerId(m.playerId),
           m.registered.map(mobimonSpeciesId),
-          m.achievements,
+          m.achievements.map(achievementFromStorage),
         ),
       ),
       encounters: s.encounters.map((e) =>
@@ -149,9 +158,12 @@ export class LocalStorageMobimonRepository implements MobimonRepository {
         Organization.reconstruct(
           playerId(o.playerId),
           o.teams
-            .filter((t) => isTeamField(t.field))
+            .flatMap((t) => {
+              const field = teamFieldOf(t.field)
+              return field ? [{ ...t, field }] : []
+            })
             .map((t): Team => ({
-              field: t.field as Team['field'],
+              field: t.field,
               leader: t.leader === null ? null : ownedMobimonId(t.leader),
               directReports: t.directReports.map((d) => ({
                 id: ownedMobimonId(d.id),
@@ -165,13 +177,16 @@ export class LocalStorageMobimonRepository implements MobimonRepository {
         DailyStepLog.reconstruct(playerId(l.playerId), l.entries),
       ),
       jobs: s.jobs
-        .filter((j) => isTeamField(j.field))
+        .flatMap((j) => {
+          const field = teamFieldOf(j.field)
+          return field ? [{ ...j, field }] : []
+        })
         .map((j) =>
           Job.reconstruct({
             ...j,
             id: jobId(j.id),
             playerId: playerId(j.playerId),
-            field: j.field as Team['field'],
+            field: j.field,
             team: {
               leader: ownedMobimonId(j.team.leader),
               subLeaders: j.team.subLeaders.map(ownedMobimonId),
@@ -180,11 +195,14 @@ export class LocalStorageMobimonRepository implements MobimonRepository {
           }),
         ),
       headhuntingRights: s.headhuntingRights
-        .filter((h) => isTeamField(h.field))
+        .flatMap((h) => {
+          const field = teamFieldOf(h.field)
+          return field ? [{ ...h, field }] : []
+        })
         .map((h) => ({
           id: headhuntingRightId(h.id),
           playerId: playerId(h.playerId),
-          field: h.field as Team['field'],
+          field: h.field,
           rank: h.rank,
           grantedAt: h.grantedAt,
         })),
@@ -213,7 +231,7 @@ export class LocalStorageMobimonRepository implements MobimonRepository {
       mobidexes: state.mobidexes.map((m) => ({
         playerId: m.playerId,
         registered: [...m.registered],
-        achievements: [...m.achievements],
+        achievements: [...m.achievements].map(achievementToStorage),
       })),
       encounters: state.encounters.map((e) => ({
         id: e.id,
@@ -231,7 +249,7 @@ export class LocalStorageMobimonRepository implements MobimonRepository {
       organizations: state.organizations.map((o) => ({
         playerId: o.playerId,
         teams: o.teams.map((t) => ({
-          field: t.field,
+          field: fieldToStorageId(t.field),
           leader: t.leader,
           directReports: t.directReports.map((d) => ({
             id: d.id,
@@ -247,7 +265,7 @@ export class LocalStorageMobimonRepository implements MobimonRepository {
       jobs: state.jobs.map((j) => ({
         id: j.id,
         playerId: j.playerId,
-        field: j.field,
+        field: fieldToStorageId(j.field),
         rank: j.rank,
         title: j.title,
         acceptedAt: j.acceptedAt,
@@ -264,7 +282,16 @@ export class LocalStorageMobimonRepository implements MobimonRepository {
         declinedAt: j.declinedAt,
         judgedAt: j.judgedAt,
       })),
-      headhuntingRights: state.headhuntingRights.map((h) => ({ ...h })),
+      headhuntingRights: state.headhuntingRights.map((h) => ({
+        ...h,
+        field: fieldToStorageId(h.field),
+      })),
     })
   }
+}
+
+/** 保存された分野の ID から、チームのある分野を戻す(知らない ID・チームのない分野なら undefined)。 */
+function teamFieldOf(id: string): Team['field'] | undefined {
+  const field = fieldFromStorageId(id)
+  return field !== undefined && isTeamField(field) ? field : undefined
 }

@@ -25,7 +25,7 @@ class InMemoryRepository implements MobimonRepository {
 }
 
 const USER = 'user-1'
-const THERMAL = 'サーマルマネジメント&エアコンシステム'
+const THERMAL = 'サーマルマネジメント'
 const byName = (name: string) => SPECIES.find((s) => s.name === name)!
 
 function setup() {
@@ -56,8 +56,8 @@ describe('OrganizationService', () => {
     const view = org.getOrganization(USER)
     expect(view.teams.map((t) => [t.field, t.leader, t.size])).toEqual([
       [THERMAL, null, 0],
-      ['パワートレインシステム', null, 0],
-      ['セーフティ&コックピットシステム', null, 0],
+      ['パワートレイン', null, 0],
+      ['インフォテイメント', null, 0],
     ])
   })
 
@@ -73,7 +73,7 @@ describe('OrganizationService', () => {
   it('超レアのリーダーで、サブリーダーと、その下のメンバーを置ける', () => {
     const { org, give } = setup()
     const leader = give('ゼンネツオウ') // サーマル・超レア
-    const sub = give('スズカゼン') // ホーム・アンコモン(分野は問わない)
+    const sub = give('スズカゼン') // スマートホーム・アンコモン(分野は問わない)
     const member = give('デンまる') // 分野なし・超レア(メンバーとしては入れる)
     org.setLeader(USER, THERMAL, leader)
     org.addDirectReport(USER, THERMAL, sub)
@@ -109,7 +109,7 @@ describe('OrganizationService', () => {
 
   it('3分野以外にはチームを作れない', () => {
     const { org, give } = setup()
-    expect(() => org.setLeader(USER, 'ホーム', give('スズカゼン'))).toThrow(DomainError)
+    expect(() => org.setLeader(USER, 'スマートホーム', give('スズカゼン'))).toThrow(DomainError)
   })
 
   it('外すと、なかまの一覧の所属も消える', () => {

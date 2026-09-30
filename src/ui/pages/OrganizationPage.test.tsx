@@ -8,13 +8,13 @@ import type {
 import { fakeOrganization } from '../testFakes.ts'
 import OrganizationPage from './OrganizationPage.tsx'
 
-const THERMAL = 'サーマルマネジメント&エアコンシステム'
+const THERMAL = 'サーマルマネジメント'
 
 const member = (
   id: string,
   name: string,
   rarity = 'アンコモン',
-  field = 'ホーム',
+  field = 'スマートホーム',
 ): TeamMemberView => ({
   id,
   name,
@@ -41,11 +41,7 @@ const team = (overrides: Partial<TeamView> = {}): TeamView => ({
 })
 
 const view = (thermal: TeamView, unassigned: TeamMemberView[] = []): OrganizationView => ({
-  teams: [
-    thermal,
-    team({ field: 'パワートレインシステム' }),
-    team({ field: 'セーフティ&コックピットシステム' }),
-  ],
+  teams: [thermal, team({ field: 'パワートレイン' }), team({ field: 'インフォテイメント' })],
   unassigned,
 })
 

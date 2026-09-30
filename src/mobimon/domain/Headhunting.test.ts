@@ -6,7 +6,7 @@ import { SPECIES } from '../masterData/species.ts'
 import { RARITIES } from './Rarity.ts'
 import { species } from './testHelpers.ts'
 
-const THERMAL = 'サーマルマネジメント&エアコンシステム'
+const THERMAL = 'サーマルマネジメント'
 
 /** 決まった値を順に返す乱数(0 以上 1 未満)。 */
 const sequence = (...values: number[]) => {
@@ -23,10 +23,10 @@ describe('drawHeadhunting', () => {
     const draw = (r: number, pick = 0) =>
       drawHeadhunting({ field: THERMAL, rank: 'C' }, pool, sequence(r, pick, 0, 0)).businessField
     expect(draw(0.49)).toBe(THERMAL)
-    expect(draw(0.5, 0)).toBe('パワートレインシステム')
-    expect(draw(0.79, 0.99)).toBe('セーフティ&コックピットシステム')
-    expect(draw(0.8, 0)).toBe('半導体・先進デバイス')
-    expect(draw(0.99, 0.99)).toBe('ホーム')
+    expect(draw(0.5, 0)).toBe('パワートレイン')
+    expect(draw(0.79, 0.99)).toBe('インフォテイメント')
+    expect(draw(0.8, 0)).toBe('先進デバイス')
+    expect(draw(0.99, 0.99)).toBe('スマートホーム')
   })
 
   it('レア度: ランクごとの比率で決まる', () => {

@@ -24,7 +24,7 @@ export function species(
     name: id,
     rarity: options.rarity ?? 'コモン',
     condition: encounterCondition(options.times ?? TIMES_OF_DAY, options.unlockSteps ?? 0),
-    businessField: options.field === undefined ? 'ホーム' : options.field,
+    businessField: options.field === undefined ? 'スマートホーム' : options.field,
     product: null,
     component: null,
     evolvesTo: options.evolvesTo ?? [],

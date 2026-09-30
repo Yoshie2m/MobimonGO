@@ -8,9 +8,9 @@ import { successRate } from './SuccessRate.ts'
 import { PLAYER } from './testHelpers.ts'
 
 const offer = (rank: JobOffer['rank'] = 'C'): JobOffer => ({
-  key: `2026-09-28/パワートレインシステム/${rank}`,
+  key: `2026-09-28/パワートレイン/${rank}`,
   date: '2026-09-28',
-  field: 'パワートレインシステム',
+  field: 'パワートレイン',
   rank,
   title: '燃料ポンプの調子を確かめる',
 })

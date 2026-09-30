@@ -80,11 +80,7 @@ export const fakeGame = (overrides: Partial<MobimonUseCases> = {}): MobimonUseCa
 })
 
 const emptyOrganization: OrganizationView = {
-  teams: [
-    'サーマルマネジメント&エアコンシステム',
-    'パワートレインシステム',
-    'セーフティ&コックピットシステム',
-  ].map((field) => ({
+  teams: ['サーマルマネジメント', 'パワートレイン', 'インフォテイメント'].map((field) => ({
     field: field as OrganizationView['teams'][number]['field'],
     locked: false,
     leader: null,

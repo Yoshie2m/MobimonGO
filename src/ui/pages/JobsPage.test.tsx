@@ -9,7 +9,7 @@ import type {
 import { fakeJobs } from '../testFakes.ts'
 import JobsPage from './JobsPage.tsx'
 
-const THERMAL = 'サーマルマネジメント&エアコンシステム'
+const THERMAL = 'サーマルマネジメント'
 
 const offer = (overrides: Partial<JobOfferView> = {}): JobOfferView => ({
   key: `2026-09-28/${THERMAL}/A`,

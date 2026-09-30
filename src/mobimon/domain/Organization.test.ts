@@ -6,8 +6,8 @@ import { Organization, type MobimonLookup, type TeamMemberInfo } from './Organiz
 import type { Rarity } from './Rarity.ts'
 import { PLAYER } from './testHelpers.ts'
 
-const THERMAL = 'サーマルマネジメント&エアコンシステム'
-const POWERTRAIN = 'パワートレインシステム'
+const THERMAL = 'サーマルマネジメント'
+const POWERTRAIN = 'パワートレイン'
 
 /** テスト用の所持モビモンの一覧。 */
 function roster(entries: Record<string, [Rarity, BusinessField | null]>) {
@@ -28,19 +28,19 @@ const r = roster({
   thermalRare: ['レア', THERMAL],
   thermalSuper: ['超レア', THERMAL],
   powertrainRare: ['レア', POWERTRAIN],
-  homeUncommon: ['アンコモン', 'ホーム'],
-  homeRare: ['レア', 'ホーム'],
-  homeCommon: ['コモン', 'ホーム'],
+  homeUncommon: ['アンコモン', 'スマートホーム'],
+  homeRare: ['レア', 'スマートホーム'],
+  homeCommon: ['コモン', 'スマートホーム'],
   superOther: ['超レア', null],
-  a: ['コモン', 'ホーム'],
-  b: ['コモン', 'ホーム'],
-  c: ['コモン', 'ホーム'],
-  d: ['コモン', 'ホーム'],
-  e: ['コモン', 'ホーム'],
-  u1: ['アンコモン', 'ホーム'],
-  u2: ['アンコモン', 'ホーム'],
-  u3: ['アンコモン', 'ホーム'],
-  u4: ['アンコモン', 'ホーム'],
+  a: ['コモン', 'スマートホーム'],
+  b: ['コモン', 'スマートホーム'],
+  c: ['コモン', 'スマートホーム'],
+  d: ['コモン', 'スマートホーム'],
+  e: ['コモン', 'スマートホーム'],
+  u1: ['アンコモン', 'スマートホーム'],
+  u2: ['アンコモン', 'スマートホーム'],
+  u3: ['アンコモン', 'スマートホーム'],
+  u4: ['アンコモン', 'スマートホーム'],
 })
 const id = ownedMobimonId
 
@@ -49,7 +49,7 @@ describe('Organization', () => {
     expect(Organization.create(PLAYER).teams.map((t) => t.field)).toEqual([
       THERMAL,
       POWERTRAIN,
-      'セーフティ&コックピットシステム',
+      'インフォテイメント',
     ])
   })
 
@@ -175,7 +175,7 @@ describe('Organization', () => {
   })
 
   it('持っていないモビモンの配置は整えるときに外れる', () => {
-    const local = roster({ leader: ['レア', THERMAL], gone: ['コモン', 'ホーム'] })
+    const local = roster({ leader: ['レア', THERMAL], gone: ['コモン', 'スマートホーム'] })
     const org = Organization.create(PLAYER)
       .setLeader(THERMAL, local.info('leader'), local.lookup)
       .addDirectReport(THERMAL, local.info('gone'))
@@ -186,7 +186,7 @@ describe('Organization', () => {
   })
 
   it('仕事を受けているチームは、整えるときにも手を付けない', () => {
-    const local = roster({ leader: ['レア', THERMAL], gone: ['コモン', 'ホーム'] })
+    const local = roster({ leader: ['レア', THERMAL], gone: ['コモン', 'スマートホーム'] })
     const org = Organization.create(PLAYER)
       .setLeader(THERMAL, local.info('leader'), local.lookup)
       .addDirectReport(THERMAL, local.info('gone'))

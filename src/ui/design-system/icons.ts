@@ -26,21 +26,21 @@ export const ICONS = {
  */
 export function fieldIcon(field: string | null): string | null {
   switch (field) {
-    case 'サーマルマネジメント&エアコンシステム':
+    case 'サーマルマネジメント':
       return thermalSystem
-    case 'パワートレインシステム':
+    case 'パワートレイン':
       return motorControl
-    case 'セーフティ&コックピットシステム':
+    case 'インフォテイメント':
       return mobility
-    case '半導体・先進デバイス':
+    case '先進デバイス':
       return advancedDevice
-    case '自動車補修用部品・アクセサリー/修理サービス':
+    case 'アフターサービス':
       return repair
     case 'インダストリー':
       return factoryAutomation
-    case 'フードバリューチェーン':
+    case 'フードバリュー':
       return foodValueChain
-    case 'ホーム':
+    case 'スマートホーム':
       return home
     default:
       return null

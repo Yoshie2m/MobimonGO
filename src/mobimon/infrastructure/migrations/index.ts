@@ -6,7 +6,7 @@ import type { Migrations } from '../../../shared/VersionedStorage.ts'
  * 1つ前の版の見本を tests/fixtures/storage/mobimongo-mobimon/ に置く(CLAUDE.md の手順)。
  * 種の統合など、マスターデータの ID を置き換える移行もここに置く。
  */
-export const CURRENT_VERSION = 4
+export const CURRENT_VERSION = 5
 
 type Json = Record<string, unknown>
 
@@ -45,6 +45,46 @@ export const MIGRATIONS: Migrations = {
       ownedMobimons: v3.ownedMobimons.map((o) => ({ ...o, restUntil: null })),
       jobs: v3.jobs.map((j) => ({ ...j, judgedAt: null })),
       headhuntingRights: [],
+    }
+  },
+  /**
+   * v4 → v5: 事業分野の名前を変えたため、保存データでは分野を名前ではなく ID で持つ。
+   * チーム・仕事・ヘッドハンティングの権利の分野と、図鑑の分野コンプリートの記録を、
+   * この版の時点の旧い名前から ID に置き換える(以後は名前を変えても移行は要らない)。
+   */
+  4: (data) => {
+    const idOf: Record<string, string> = {
+      'サーマルマネジメント&エアコンシステム': 'thermal',
+      パワートレインシステム: 'powertrain',
+      'セーフティ&コックピットシステム': 'safety',
+      '半導体・先進デバイス': 'semiconductor',
+      '自動車補修用部品・アクセサリー/修理サービス': 'service',
+      インダストリー: 'industry',
+      フードバリューチェーン: 'food',
+      ホーム: 'home',
+    }
+    const field = (name: string) => idOf[name] ?? name
+    const v4 = data as Json & {
+      organizations: (Json & { teams: (Json & { field: string })[] })[]
+      jobs: (Json & { field: string })[]
+      headhuntingRights: (Json & { field: string })[]
+      mobidexes: (Json & { achievements: string[] })[]
+    }
+    const prefix = 'completed:field:'
+    return {
+      ...v4,
+      organizations: v4.organizations.map((o) => ({
+        ...o,
+        teams: o.teams.map((t) => ({ ...t, field: field(t.field) })),
+      })),
+      jobs: v4.jobs.map((j) => ({ ...j, field: field(j.field) })),
+      headhuntingRights: v4.headhuntingRights.map((h) => ({ ...h, field: field(h.field) })),
+      mobidexes: v4.mobidexes.map((m) => ({
+        ...m,
+        achievements: m.achievements.map((a) =>
+          a.startsWith(prefix) ? prefix + field(a.slice(prefix.length)) : a,
+        ),
+      })),
     }
   },
 }

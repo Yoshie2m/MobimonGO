@@ -5,9 +5,9 @@ import type { Rarity } from './Rarity.ts'
 
 /** チームを作る事業分野(3分野だけ。残りの分野のモビモンはメンバーとして入る)。 */
 export const TEAM_FIELDS = [
-  'サーマルマネジメント&エアコンシステム',
-  'パワートレインシステム',
-  'セーフティ&コックピットシステム',
+  'サーマルマネジメント',
+  'パワートレイン',
+  'インフォテイメント',
 ] as const satisfies readonly BusinessField[]
 
 export type TeamField = (typeof TEAM_FIELDS)[number]

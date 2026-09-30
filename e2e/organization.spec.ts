@@ -4,7 +4,7 @@ import { expect, menu, prepare, test } from './fixtures.ts'
 
 const FIXTURES = path.join(import.meta.dirname, '../tests/fixtures/storage')
 const read = (file: string) => readFileSync(path.join(FIXTURES, file), 'utf8')
-const THERMAL = 'サーマルマネジメント&エアコンシステム'
+const THERMAL = 'サーマルマネジメント'
 
 test('組織: 超レアのリーダーのチームで部下を加え、サブリーダーにし、再読み込みしても残る', async ({
   page,
@@ -25,10 +25,10 @@ test('組織: 超レアのリーダーのチームで部下を加え、サブリ
   await expect(thermal.getByText('4 / 21体')).toBeVisible()
   await expect(thermal.getByText('部下 2 / 4体(サブリーダー 1 / 4体)')).toBeVisible()
 
-  // スズカゼン(ホーム・アンコモン)を部下に加えて、サブリーダーにする
+  // スズカゼン(スマートホーム・アンコモン)を部下に加えて、サブリーダーにする
   await thermal
     .getByLabel(`${THERMAL}の部下`)
-    .selectOption({ label: 'スズカゼン(アンコモン・Lv1・ホーム)' })
+    .selectOption({ label: 'スズカゼン(アンコモン・Lv1・スマートホーム)' })
   await thermal.getByRole('button', { name: '部下に加える' }).click()
   await expect(thermal.getByText('5 / 21体')).toBeVisible()
   const suzukazen = thermal.locator('.team-member').filter({ hasText: 'スズカゼン' })
@@ -36,7 +36,7 @@ test('組織: 超レアのリーダーのチームで部下を加え、サブリ
   await expect(thermal.getByText('部下 3 / 4体(サブリーダー 2 / 4体)')).toBeVisible()
 
   // パワートレインにはリーダーになれるモビモンがいない
-  const powertrain = page.getByRole('region', { name: 'パワートレインシステムのチーム' })
+  const powertrain = page.getByRole('region', { name: 'パワートレインのチーム' })
   await expect(powertrain.getByText(/リーダーになれるモビモン/)).toBeVisible()
 
   // 再読み込みしても残り、なかまの一覧に所属が出る

@@ -15,7 +15,7 @@ function registerAll(list: readonly MobimonSpecies[], start = Mobidex.create(PLA
   return { mobidex, events }
 }
 
-const home = SPECIES.filter((s) => s.businessField === 'ホーム')
+const home = SPECIES.filter((s) => s.businessField === 'スマートホーム')
 const denmaru = findSpecies(mobimonSpeciesId('M151'))
 
 describe('Mobidex', () => {
@@ -35,19 +35,19 @@ describe('Mobidex', () => {
   it('事業分野の超レア以外がそろうと、その事業分野のコンプリート(超レアがなくてもよい)', () => {
     expect(home.some((s) => s.rarity === '超レア')).toBe(false)
     const { mobidex, events } = registerAll(home)
-    expect(mobidex.isCompleted({ kind: 'field', field: 'ホーム' }, SPECIES)).toBe(true)
+    expect(mobidex.isCompleted({ kind: 'field', field: 'スマートホーム' }, SPECIES)).toBe(true)
     expect(events).toContainEqual({
       type: 'MobidexCompleted',
       playerId: PLAYER,
-      scope: { kind: 'field', field: 'ホーム' },
+      scope: { kind: 'field', field: 'スマートホーム' },
     })
 
     const thermal = SPECIES.filter(
-      (s) => s.businessField === 'サーマルマネジメント&エアコンシステム' && s.rarity !== '超レア',
+      (s) => s.businessField === 'サーマルマネジメント' && s.rarity !== '超レア',
     )
     expect(
       registerAll(thermal).mobidex.isCompleted(
-        { kind: 'field', field: 'サーマルマネジメント&エアコンシステム' },
+        { kind: 'field', field: 'サーマルマネジメント' },
         SPECIES,
       ),
     ).toBe(true)
@@ -78,7 +78,7 @@ describe('Mobidex', () => {
   it('同じコンプリートは二度達成しない', () => {
     const { mobidex } = registerAll(home)
     const again = Mobidex.reconstruct(PLAYER, [...mobidex.registered], mobidex.achievements)
-    const other = SPECIES.find((s) => s.businessField !== 'ホーム')!
+    const other = SPECIES.find((s) => s.businessField !== 'スマートホーム')!
     expect(again.register(other, SPECIES).events).toEqual([])
   })
 })

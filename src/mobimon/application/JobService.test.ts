@@ -26,8 +26,8 @@ class InMemoryRepository implements MobimonRepository {
 }
 
 const USER = 'user-1'
-const THERMAL = 'サーマルマネジメント&エアコンシステム'
-const POWERTRAIN = 'パワートレインシステム'
+const THERMAL = 'サーマルマネジメント'
+const POWERTRAIN = 'パワートレイン'
 const speciesOf = (rarity: string, field: string | null) =>
   SPECIES.find((s) => s.rarity === rarity && s.businessField === field && !s.retired)!
 
@@ -61,9 +61,9 @@ function setup(random: () => number = () => 0) {
 function withThermalTeam(random?: () => number) {
   const t = setup(random)
   const leader = t.give('超レア', THERMAL, 20)
-  const sub = t.give('レア', 'ホーム')
-  const a = t.give('コモン', 'ホーム')
-  const b = t.give('コモン', 'ホーム')
+  const sub = t.give('レア', 'スマートホーム')
+  const a = t.give('コモン', 'スマートホーム')
+  const b = t.give('コモン', 'スマートホーム')
   t.org.setLeader(USER, THERMAL, leader)
   t.org.addDirectReport(USER, THERMAL, sub)
   t.org.setSubLeader(USER, THERMAL, sub, true)

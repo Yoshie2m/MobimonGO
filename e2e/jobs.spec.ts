@@ -4,7 +4,7 @@ import { expect, importManually, menu, prepare, test, TODAY } from './fixtures.t
 
 const FIXTURES = path.join(import.meta.dirname, '../tests/fixtures/storage')
 const read = (file: string) => readFileSync(path.join(FIXTURES, file), 'utf8')
-const THERMAL = 'サーマルマネジメント&エアコンシステム'
+const THERMAL = 'サーマルマネジメント'
 
 const seed = (mobimon: string) => ({
   'mobimongo:app': read('mobimongo-app/v1.json'),
@@ -28,7 +28,7 @@ test('仕事: 超レアのリーダーのチームで A ランクを受注し、
   )
   // リーダーのいないチームの仕事は受けられない
   await expect(
-    page.getByRole('region', { name: 'パワートレインシステムの仕事' }).getByRole('button'),
+    page.getByRole('region', { name: 'パワートレインの仕事' }).getByRole('button'),
   ).toHaveCount(0)
 
   await rankA.getByRole('button', { name: '受注する' }).click()

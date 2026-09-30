@@ -7,7 +7,7 @@ import { parseMobimonList } from './parseMobimonList.ts'
 import { findSpeciesOrUnknown } from './species.ts'
 
 const markdown = `
-### ホーム
+### スマートホーム
 
 | No. | 名前 | 主力製品 | 部品・機能 | レア度 | 出現時間帯 | 解放に必要な累計歩数 | 進化元 | 進化先 | 解説 |
 |---|---|---|---|---|---|---|---|---|---|
