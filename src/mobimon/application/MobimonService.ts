@@ -2,6 +2,7 @@ import type { StepResourceEvent } from '../../publishedLanguage/stepResourceEven
 import type { Clock } from '../../shared/Clock.ts'
 import { DomainError } from '../../shared/DomainError.ts'
 import type { IdGenerator } from '../../shared/IdGenerator.ts'
+import { localDateOf } from '../../shared/LocalDate.ts'
 import { BUSINESS_FIELDS, type BusinessField } from '../domain/BusinessField.ts'
 import { DailyStepLog } from '../domain/DailyStepLog.ts'
 import { Encounter } from '../domain/Encounter.ts'
@@ -17,6 +18,7 @@ import {
   type PlayerId,
 } from '../domain/ids.ts'
 import { Inventory } from '../domain/Inventory.ts'
+import { daysBetween } from '../domain/Job.ts'
 import type { ItemEffectKind } from '../domain/Item.ts'
 import { purchaseItem } from '../domain/ItemPurchaseService.ts'
 import { MILESTONE_COUNTS, Mobidex } from '../domain/Mobidex.ts'
@@ -51,6 +53,8 @@ export interface OwnedMobimonView {
   evolutionLevel: number | null
   /** 所属チームと役割(チームに入っていなければ null)。 */
   team?: { field: string; role: string } | null
+  /** 休養中なら、休養が明けるまでの日数(休養中でなければ null)。 */
+  restingDays?: number | null
 }
 
 export interface EncounterView {
@@ -243,6 +247,7 @@ export class MobimonService {
     const pid = toPlayerId(id)
     const state = this.repository.load()
     const organization = state.organizations.find((o) => o.playerId === pid)
+    const today = localDateOf(this.clock.now())
     return state.ownedMobimons
       .filter((m) => m.playerId === pid)
       .map((m) => {
@@ -250,6 +255,7 @@ export class MobimonService {
         return {
           ...ownedView(m),
           team: position ? { field: position.field, role: position.role } : null,
+          restingDays: m.isResting(today) ? daysBetween(today, m.restUntil!) : null,
         }
       })
   }
@@ -291,7 +297,7 @@ export class MobimonService {
 
     const owned = OwnedMobimon.capture(ownedMobimonId(this.ids.next()), ctx.pid, event.speciesId)
     state.ownedMobimons.push(owned)
-    const registration = this.register(state, ctx.pid, findSpeciesOrUnknown(event.speciesId))
+    const registration = registerInMobidex(state, ctx.pid, findSpeciesOrUnknown(event.speciesId))
     this.repository.save(state)
     return { mobimon: ownedView(owned), ...registration }
   }
@@ -317,7 +323,10 @@ export class MobimonService {
     const current = state.ownedMobimons[index]
     if (current.level >= MAX_LEVEL) throw new DomainError('レベルが上限に達しています')
     const wallet = ctx.wallet.spendEnergy(TrainingCost)
-    const { mobimon, event } = current.train(ctx.inventory.multiplierOf('training'))
+    const { mobimon, event } = current.train(
+      ctx.inventory.multiplierOf('training'),
+      localDateOf(this.clock.now()),
+    )
     state.ownedMobimons[index] = mobimon
     replaceFor(state.wallets, ctx.pid, wallet)
     replaceFor(state.inventories, ctx.pid, ctx.inventory.consumeEffect('training'))
@@ -338,7 +347,7 @@ export class MobimonService {
     const from = findSpeciesOrUnknown(current.speciesId)
     const { mobimon } = current.evolve(from, mobimonSpeciesId(toSpeciesId))
     state.ownedMobimons[index] = mobimon
-    const registration = this.register(state, ctx.pid, findSpeciesOrUnknown(mobimon.speciesId))
+    const registration = registerInMobidex(state, ctx.pid, findSpeciesOrUnknown(mobimon.speciesId))
     // 進化でレア度が変わり、編成の条件を満たさなくなった配置を外す(仕事を受けているチームはそのまま)
     const lookup = lookupFor(state, ctx.pid).lookup
     state.organizations = state.organizations.map((o) =>
@@ -419,40 +428,8 @@ export class MobimonService {
    * 図鑑に登録し、達成したコンプリート・節目の報酬(アイテム・称号)を渡す
    * (MobidexCompleted / MobidexMilestoneReached の購読者)。同じ報酬は二度渡さない。
    */
-  private register(state: MobimonState, pid: PlayerId, species: MobimonSpecies) {
-    const ctx = this.context(state, pid)
-    const { mobidex, events } = ctx.mobidex.register(species, SPECIES)
-    replaceFor(state.mobidexes, pid, mobidex)
-
-    let inventory = ctx.inventory
-    let player = ctx.player
-    const rewards: RewardView[] = []
-    for (const event of events) {
-      const reward = rewardFor(event)
-      for (const { itemId, quantity } of reward.items)
-        inventory = inventory.receive(itemId, quantity)
-      if (reward.titleId) player = player.grantTitle(reward.titleId)
-      rewards.push({
-        reason: rewardReason(event),
-        items: reward.items.map((i) => ({ name: itemNameOf(i.itemId), quantity: i.quantity })),
-        title: reward.titleId ? titleNames([reward.titleId])[0] : null,
-      })
-    }
-    replaceFor(state.inventories, pid, inventory)
-    replace(state.players, (p) => (p.id === pid ? player : p))
-    return { newlyRegistered: mobidex !== ctx.mobidex, rewards }
-  }
-
   private context(state: MobimonState, id: string) {
-    const pid = toPlayerId(id)
-    const player = state.players.find((p) => p.id === pid)
-    const wallet = state.wallets.find((w) => w.playerId === pid)
-    const inventory = state.inventories.find((i) => i.playerId === pid)
-    const mobidex = state.mobidexes.find((m) => m.playerId === pid)
-    if (!player || !wallet || !inventory || !mobidex) {
-      throw new DomainError(`プレイヤーが登録されていません: ${id}`)
-    }
-    return { pid, player, wallet, inventory, mobidex }
+    return playerContext(state, id)
   }
 
   private ownedIndex(state: MobimonState, pid: PlayerId, ownedId: string): number {
@@ -460,6 +437,45 @@ export class MobimonService {
     if (index < 0) throw new DomainError('所持モビモンが見つかりません')
     return index
   }
+}
+
+/**
+ * 種を図鑑に登録し、コンプリート・節目の報酬を渡す(捕獲・進化・ヘッドハンティングで共通)。
+ * state を書き換える(保存は呼び出し側)。
+ */
+export function registerInMobidex(state: MobimonState, pid: PlayerId, species: MobimonSpecies) {
+  const ctx = playerContext(state, pid)
+  const { mobidex, events } = ctx.mobidex.register(species, SPECIES)
+  replaceFor(state.mobidexes, pid, mobidex)
+
+  let inventory = ctx.inventory
+  let player = ctx.player
+  const rewards: RewardView[] = []
+  for (const event of events) {
+    const reward = rewardFor(event)
+    for (const { itemId, quantity } of reward.items) inventory = inventory.receive(itemId, quantity)
+    if (reward.titleId) player = player.grantTitle(reward.titleId)
+    rewards.push({
+      reason: rewardReason(event),
+      items: reward.items.map((i) => ({ name: itemNameOf(i.itemId), quantity: i.quantity })),
+      title: reward.titleId ? titleNames([reward.titleId])[0] : null,
+    })
+  }
+  replaceFor(state.inventories, pid, inventory)
+  replace(state.players, (p) => (p.id === pid ? player : p))
+  return { newlyRegistered: mobidex !== ctx.mobidex, rewards }
+}
+
+function playerContext(state: MobimonState, id: string) {
+  const pid = toPlayerId(id)
+  const player = state.players.find((p) => p.id === pid)
+  const wallet = state.wallets.find((w) => w.playerId === pid)
+  const inventory = state.inventories.find((i) => i.playerId === pid)
+  const mobidex = state.mobidexes.find((m) => m.playerId === pid)
+  if (!player || !wallet || !inventory || !mobidex) {
+    throw new DomainError(`プレイヤーが登録されていません: ${id}`)
+  }
+  return { pid, player, wallet, inventory, mobidex }
 }
 
 function rewardFor(event: MobidexCompleted | MobidexMilestoneReached): Reward {
@@ -495,7 +511,7 @@ function encounterView(encounter: Encounter): EncounterView {
   }
 }
 
-function ownedView(mobimon: OwnedMobimon): OwnedMobimonView {
+export function ownedView(mobimon: OwnedMobimon): OwnedMobimonView {
   const species = findSpeciesOrUnknown(mobimon.speciesId)
   const canEvolve = species.evolutionLevel !== null && mobimon.level >= species.evolutionLevel
   return {

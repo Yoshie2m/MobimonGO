@@ -4,6 +4,7 @@ import type {
   ActiveJobView,
   JobOfferView,
   JobsView,
+  JudgeResult,
 } from '../../mobimon/application/mobimonUseCases.ts'
 import { fakeJobs } from '../testFakes.ts'
 import JobsPage from './JobsPage.tsx'
@@ -37,6 +38,7 @@ const active = (overrides: Partial<ActiveJobView> = {}): ActiveJobView => ({
   phase: '進行中',
   successRate: 75,
   declineBlocker: null,
+  canJudge: false,
   ...overrides,
 })
 
@@ -45,6 +47,7 @@ const view = (overrides: Partial<JobsView> = {}): JobsView => ({
   board: [],
   activeJobs: [],
   declinesLeft: 1,
+  headhuntingRights: [],
   ...overrides,
 })
 
@@ -126,16 +129,101 @@ describe('JobsPage', () => {
     expect(screen.getByText(/明日から数えます/)).toBeVisible()
   })
 
-  it('歩き切った仕事は、判定を待っていると示す', () => {
+  it('歩き切った仕事の結果を見ると、成功・経験値・権利を示す', async () => {
+    const user = userEvent.setup()
+    const judge = vi.fn((): JudgeResult => ({
+      title: '電気自動車の熱をまとめて管理する',
+      success: true,
+      failureReason: null,
+      successRate: 75,
+      experience: [{ name: 'ゼンネツオウ', gained: 300, level: 21, leveledUp: true }],
+      headhuntingRights: 2,
+      rested: null,
+    }))
     render(
       <JobsPage
         jobs={fakeJobs({
-          getJobs: () => view({ activeJobs: [active({ phase: '歩き切った', remaining: 0 })] }),
+          getJobs: () =>
+            view({ activeJobs: [active({ phase: '歩き切った', remaining: 0, canJudge: true })] }),
+          judge,
         })}
         onChanged={() => {}}
       />,
     )
-    expect(screen.getByText('歩き切りました。判定を待っています')).toBeVisible()
+    expect(screen.getByText('歩き切りました。結果を見ると、成功の確率で判定します')).toBeVisible()
+    await user.click(screen.getByRole('button', { name: '結果を見る' }))
+    expect(judge).toHaveBeenCalledWith('j1')
+    const result = screen.getByRole('region', { name: '仕事の結果' })
+    expect(within(result).getByText('仕事に成功しました')).toBeVisible()
+    expect(
+      within(result).getByText('ゼンネツオウ: 経験値 ▲ 300(Lv21 に上がりました)'),
+    ).toBeVisible()
+    expect(within(result).getByText(/ヘッドハンティングの権利を 2件/)).toBeVisible()
+  })
+
+  it('失敗して休養に入ったメンバーを示す', async () => {
+    const user = userEvent.setup()
+    render(
+      <JobsPage
+        jobs={fakeJobs({
+          getJobs: () => view({ activeJobs: [active({ phase: '納期切れ', canJudge: true })] }),
+          judge: () => ({
+            title: '電気自動車の熱をまとめて管理する',
+            success: false,
+            failureReason: '納期に間に合わなかった',
+            successRate: 75,
+            experience: [],
+            headhuntingRights: 0,
+            rested: { name: 'フウフウ', days: 5 },
+          }),
+        })}
+        onChanged={() => {}}
+      />,
+    )
+    expect(screen.getByText(/納期の日までの歩数を取り込んでから/)).toBeVisible()
+    await user.click(screen.getByRole('button', { name: '結果を見る' }))
+    const result = screen.getByRole('region', { name: '仕事の結果' })
+    expect(within(result).getByText('仕事は失敗に終わりました')).toBeVisible()
+    expect(within(result).getByText('納期までに歩き切れませんでした。')).toBeVisible()
+    expect(
+      within(result).getByText(/フウフウは休養が必要になりました。5日後に戻ります/),
+    ).toBeVisible()
+  })
+
+  it('ヘッドハンティングの権利を使って、モビモンを迎える', async () => {
+    const user = userEvent.setup()
+    const headhunt = vi.fn(() => ({
+      mobimon: {
+        id: 'o9',
+        speciesId: 'M020',
+        name: 'サムサム',
+        rarity: 'レア',
+        businessField: THERMAL,
+        description: '',
+        level: 1,
+        experience: 0,
+        experienceToNextLevel: 50,
+        evolutionOptions: [],
+        evolutionLevel: null,
+      },
+      newlyRegistered: true,
+      rewards: [],
+    }))
+    render(
+      <JobsPage
+        jobs={fakeJobs({
+          getJobs: () => view({ headhuntingRights: [{ id: 'h1', field: THERMAL, rank: 'S' }] }),
+          headhunt,
+        })}
+        onChanged={() => {}}
+      />,
+    )
+    expect(screen.getByText('ヘッドハンティングの権利 1件')).toBeVisible()
+    await user.click(screen.getByRole('button', { name: '迎える' }))
+    expect(headhunt).toHaveBeenCalledWith('h1')
+    expect(
+      screen.getByText(`サムサム(レア・${THERMAL})を迎えました(図鑑に新しく登録しました)`),
+    ).toBeVisible()
   })
 
   it('操作に失敗したら理由を示す', async () => {

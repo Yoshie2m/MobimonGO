@@ -5,6 +5,7 @@ import { Encounter } from '../domain/Encounter.ts'
 import { Organization } from '../domain/Organization.ts'
 import { encounterId, grantId, ownedMobimonId, playerId, titleId } from '../domain/ids.ts'
 import { Inventory } from '../domain/Inventory.ts'
+import { headhuntingRightId } from '../domain/Headhunting.ts'
 import { Job, jobId } from '../domain/Job.ts'
 import { Mobidex } from '../domain/Mobidex.ts'
 import { OwnedMobimon } from '../domain/OwnedMobimon.ts'
@@ -33,7 +34,9 @@ describe('LocalStorageMobimonRepository', () => {
       inventories: [Inventory.create(p).add(aroma.id, 2).use(aroma).inventory.receive(aroma.id, 1)],
       mobidexes: [Mobidex.create(p).register(SPECIES[0], SPECIES).mobidex],
       encounters: [Encounter.appear(encounterId('e1'), p, SPECIES[0].id).encounter],
-      ownedMobimons: [OwnedMobimon.reconstruct(ownedMobimonId('o1'), p, SPECIES[0].id, 250)],
+      ownedMobimons: [
+        OwnedMobimon.reconstruct(ownedMobimonId('o1'), p, SPECIES[0].id, 250).rest('2026-10-01'),
+      ],
       organizations: [
         Organization.create(p).addDirectReport('パワートレインシステム', {
           id: ownedMobimonId('o1'),
@@ -60,6 +63,15 @@ describe('LocalStorageMobimonRepository', () => {
           successRate: 85,
         }).decline(new Date(2026, 8, 28, 13), 0),
       ],
+      headhuntingRights: [
+        {
+          id: headhuntingRightId('h1'),
+          playerId: p,
+          field: 'パワートレインシステム',
+          rank: 'A',
+          grantedAt: '2026-09-28T03:00:00.000Z',
+        },
+      ],
     })
 
     const loaded = new LocalStorageMobimonRepository(localStorage).load()
@@ -75,7 +87,8 @@ describe('LocalStorageMobimonRepository', () => {
     expect([...loaded.mobidexes[0].registered]).toEqual([SPECIES[0].id])
     expect(loaded.encounters[0].state).toBe('出現中')
     expect(loaded.ownedMobimons[0].level).toBe(3)
-    expect(JSON.parse(localStorage.getItem(MOBIMON_STORAGE_KEY)!).version).toBe(3)
+    expect(loaded.ownedMobimons[0].isResting('2026-09-30')).toBe(true)
+    expect(JSON.parse(localStorage.getItem(MOBIMON_STORAGE_KEY)!).version).toBe(4)
     expect(loaded.organizations[0].positionOf(ownedMobimonId('o1'))).toEqual({
       field: 'パワートレインシステム',
       role: 'メンバー',
@@ -91,6 +104,16 @@ describe('LocalStorageMobimonRepository', () => {
       successRate: 85,
       team: { leader: 'o1', subLeaders: [], members: [] },
       status: '辞退',
+      judgedAt: null,
     })
+    expect(loaded.headhuntingRights).toEqual([
+      {
+        id: 'h1',
+        playerId: 'user-1',
+        field: 'パワートレインシステム',
+        rank: 'A',
+        grantedAt: '2026-09-28T03:00:00.000Z',
+      },
+    ])
   })
 })

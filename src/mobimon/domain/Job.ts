@@ -12,9 +12,9 @@ export const DECLINE_WINDOW_MS = 24 * 60 * 60 * 1000
 /** 辞退できるのは、直近7日間で1回まで。 */
 export const DECLINE_LIMIT_DAYS = 7
 
-export type JobStatus = '進行中' | '辞退'
+export type JobStatus = '進行中' | '辞退' | '成功' | '失敗'
 
-/** 仕事の進み具合から見た段階(判定は段階3)。 */
+/** 進行中の仕事の、進み具合から見た段階。歩き切った・納期切れなら判定できる。 */
 export type JobPhase = '進行中' | '歩き切った' | '納期切れ'
 
 /** 掲示板に出ている仕事(その日の仕事)。 */
@@ -45,7 +45,12 @@ export interface JobProps {
   team: TeamSnapshot
   status: JobStatus
   declinedAt: string | null
+  judgedAt: string | null
 }
+
+/** 判定の結果。失敗の理由は、納期に間に合わなかった / 歩き切ったが判定で外れた。 */
+export type JudgeOutcome =
+  { success: true } | { success: false; reason: '納期に間に合わなかった' | '判定で失敗した' }
 
 /**
  * 受注した仕事。受注したときの条件(納期・業務達成歩数・成功の確率)のまま進める。
@@ -68,6 +73,7 @@ export class Job {
   readonly team: TeamSnapshot
   readonly status: JobStatus
   readonly declinedAt: string | null
+  readonly judgedAt: string | null
 
   private constructor(p: JobProps) {
     this.id = p.id
@@ -83,6 +89,7 @@ export class Job {
     this.team = p.team
     this.status = p.status
     this.declinedAt = p.declinedAt
+    this.judgedAt = p.judgedAt
   }
 
   static accept(p: {
@@ -112,6 +119,7 @@ export class Job {
       team: p.team,
       status: '進行中',
       declinedAt: null,
+      judgedAt: null,
     })
   }
 
@@ -132,6 +140,32 @@ export class Job {
     if (this.progress(log, today) >= this.requiredSteps) return '歩き切った'
     if (today > this.deadlineDate) return '納期切れ'
     return '進行中'
+  }
+
+  /**
+   * 判定する。納期までに歩き切れなければ失敗。歩き切ったら、受注したときの成功の確率で判定する。
+   * 歩き切れば納期の前でも判定できる。random は 0 以上 1 未満。
+   */
+  judge(p: { log: DailyStepLog; today: string; now: Date; random: () => number }): {
+    job: Job
+    outcome: JudgeOutcome
+  } {
+    if (this.status !== '進行中') throw new DomainError('進行中の仕事ではありません')
+    const phase = this.phase(p.log, p.today)
+    if (phase === '進行中')
+      throw new DomainError('まだ判定できません(歩き切るか、納期を過ぎると判定できます)')
+    const outcome: JudgeOutcome =
+      phase === '納期切れ'
+        ? { success: false, reason: '納期に間に合わなかった' }
+        : p.random() * 100 < this.successRate
+          ? { success: true }
+          : { success: false, reason: '判定で失敗した' }
+    const job = new Job({
+      ...this,
+      status: outcome.success ? '成功' : '失敗',
+      judgedAt: p.now.toISOString(),
+    })
+    return { job, outcome }
   }
 
   /** 辞退できるか。できなければ理由を返す。 */

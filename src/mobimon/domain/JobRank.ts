@@ -29,13 +29,57 @@ export interface RankRule {
   baseSuccessRate: number
   /** 成功の確率の上限(%)。 */
   maxSuccessRate: number
+  /** 成功したときに得るヘッドハンティングの権利の数。 */
+  headhunts: number
+  /** 失敗したときに、メンバーが休養に入る確率(%)。納期に間に合わなかった / 歩き切ったが判定で失敗。 */
+  restRate: { missed: number; failed: number }
+  /** 休養の日数。 */
+  restDays: number
+  /** 成功したときに、チームの全員が得る経験値。 */
+  experience: number
 }
 
 export const RANK_RULES: Readonly<Record<JobRank, RankRule>> = {
-  C: { days: 3, requiredSteps: 20_000, baseSuccessRate: 85, maxSuccessRate: 98 },
-  B: { days: 5, requiredSteps: 45_000, baseSuccessRate: 75, maxSuccessRate: 95 },
-  A: { days: 7, requiredSteps: 70_000, baseSuccessRate: 65, maxSuccessRate: 90 },
-  S: { days: 7, requiredSteps: 91_000, baseSuccessRate: 50, maxSuccessRate: 85 },
+  C: {
+    days: 3,
+    requiredSteps: 20_000,
+    baseSuccessRate: 85,
+    maxSuccessRate: 98,
+    headhunts: 1,
+    restRate: { missed: 5, failed: 3 },
+    restDays: 3,
+    experience: 100,
+  },
+  B: {
+    days: 5,
+    requiredSteps: 45_000,
+    baseSuccessRate: 75,
+    maxSuccessRate: 95,
+    headhunts: 1,
+    restRate: { missed: 10, failed: 5 },
+    restDays: 4,
+    experience: 200,
+  },
+  A: {
+    days: 7,
+    requiredSteps: 70_000,
+    baseSuccessRate: 65,
+    maxSuccessRate: 90,
+    headhunts: 2,
+    restRate: { missed: 20, failed: 10 },
+    restDays: 5,
+    experience: 300,
+  },
+  S: {
+    days: 7,
+    requiredSteps: 91_000,
+    baseSuccessRate: 50,
+    maxSuccessRate: 85,
+    headhunts: 2,
+    restRate: { missed: 30, failed: 15 },
+    restDays: 7,
+    experience: 500,
+  },
 }
 
 /**

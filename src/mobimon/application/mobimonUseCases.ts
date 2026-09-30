@@ -34,9 +34,16 @@ export type {
   TeamView,
 } from './OrganizationService.ts'
 
-export type { ActiveJobView, JobOfferView, JobsView } from './JobService.ts'
+export type {
+  ActiveJobView,
+  HeadhuntingRightView,
+  JobOfferView,
+  JobsView,
+  JudgeResult,
+} from './JobService.ts'
 
-import type { JobsView } from './JobService.ts'
+import type { JobsView, JudgeResult } from './JobService.ts'
+import type { CaptureResult as HeadhuntResult } from './MobimonService.ts'
 import type { OrganizationView } from './OrganizationService.ts'
 
 /** 仕事(掲示板・受注・辞退)の操作。 */
@@ -44,6 +51,10 @@ export interface JobUseCases {
   getJobs(): JobsView
   accept(offerKey: string): void
   decline(jobId: string): void
+  /** 歩き切った・納期を過ぎた仕事の結果を出す。 */
+  judge(jobId: string): JudgeResult
+  /** ヘッドハンティングの権利を使って、モビモンを迎える。 */
+  headhunt(rightId: string): HeadhuntResult
 }
 
 /** 組織(チームの編成)の操作。 */

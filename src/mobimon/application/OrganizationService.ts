@@ -1,5 +1,8 @@
+import { systemClock, type Clock } from '../../shared/Clock.ts'
 import { DomainError } from '../../shared/DomainError.ts'
+import { localDateOf } from '../../shared/LocalDate.ts'
 import { ownedMobimonId, playerId as toPlayerId, type PlayerId } from '../domain/ids.ts'
+import { daysBetween } from '../domain/Job.ts'
 import { acceptableRanks, type JobRank } from '../domain/JobRank.ts'
 import type { MobimonRepository, MobimonState } from '../domain/MobimonRepository.ts'
 import {
@@ -22,6 +25,8 @@ export interface TeamMemberView {
   rarity: string
   businessField: string | null
   level: number
+  /** 休養中なら、休養が明けるまでの日数(休養中でなければ null)。休養中は成功の確率に数えない。 */
+  restingDays: number | null
 }
 
 export interface DirectReportView {
@@ -59,14 +64,16 @@ export interface OrganizationView {
 /** 組織とチームの編成のユースケース(組織と仕事・段階1)。 */
 export class OrganizationService {
   private readonly repository: MobimonRepository
+  private readonly clock: Clock
 
-  constructor(repository: MobimonRepository) {
+  constructor(repository: MobimonRepository, clock: Clock = systemClock) {
     this.repository = repository
+    this.clock = clock
   }
 
   getOrganization(id: string): OrganizationView {
     const state = this.repository.load()
-    const { organization, members, lookup } = this.context(state, id)
+    const { organization, members, lookup } = this.context(state, id, localDateOf(this.clock.now()))
     const assigned = new Set<string>(organization.assignedIds)
     const locked = lockedFields(state, toPlayerId(id))
     const unassigned = [...members.values()].filter((m) => !assigned.has(m.id))
@@ -156,16 +163,16 @@ export class OrganizationService {
     this.repository.save(state)
   }
 
-  private context(state: MobimonState, id: string) {
+  private context(state: MobimonState, id: string, today?: string) {
     const pid = toPlayerId(id)
     const organization = state.organizations.find((o) => o.playerId === pid)
     if (!organization) throw new DomainError(`組織がありません: ${id}`)
-    return { pid, organization, ...lookupFor(state, pid) }
+    return { pid, organization, ...lookupFor(state, pid, today) }
   }
 }
 
 /** 所持モビモンの情報(編成の判定用と、画面の表示用)。 */
-export function lookupFor(state: MobimonState, pid: PlayerId) {
+export function lookupFor(state: MobimonState, pid: PlayerId, today?: string) {
   const members = new Map<string, TeamMemberView>()
   for (const m of state.ownedMobimons.filter((o) => o.playerId === pid)) {
     const species = findSpeciesOrUnknown(m.speciesId)
@@ -175,6 +182,8 @@ export function lookupFor(state: MobimonState, pid: PlayerId) {
       rarity: species.rarity,
       businessField: species.businessField,
       level: m.level,
+      restingDays:
+        today !== undefined && m.isResting(today) ? daysBetween(today, m.restUntil!) : null,
     })
   }
   const lookup: MobimonLookup = (oid) => {

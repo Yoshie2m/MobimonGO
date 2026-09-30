@@ -94,6 +94,17 @@ describe('CollectionPage', () => {
     expect(screen.getByText(/フウフウがヒエポレに進化しました/)).toBeInTheDocument()
   })
 
+  it('休養中のモビモンは、あと何日かを示し、育成できない', () => {
+    const game = fakeGame({
+      getSummary: () => fakeSummary({ energy: 20 }),
+      listOwnedMobimon: () => [owned({ restingDays: 3, evolutionOptions: [] })],
+    })
+    render(<CollectionPage game={game} onChanged={() => {}} />)
+    expect(screen.getByText('休養中(あと 3日)')).toBeInTheDocument()
+    expect(screen.getByText('休養中のため育成できません')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '育てる' })).toBeDisabled()
+  })
+
   it('なかまがいなければ案内を表示する', () => {
     render(<CollectionPage game={fakeGame()} onChanged={() => {}} />)
     expect(screen.getByText('まだなかまがいません')).toBeInTheDocument()

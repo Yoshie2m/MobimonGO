@@ -73,3 +73,22 @@ describe('進化', () => {
     ).toThrow('進化しません')
   })
 })
+
+describe('休養', () => {
+  const owned = () => OwnedMobimon.capture(ownedMobimonId('o1'), PLAYER, mobimonSpeciesId('M001'))
+
+  it('休養が明ける日の前日まで休養中。休養中は育成できない', () => {
+    const resting = owned().rest('2026-10-01')
+    expect(resting.isResting('2026-09-30')).toBe(true)
+    expect(resting.isResting('2026-10-01')).toBe(false)
+    expect(() => resting.train(1, '2026-09-30')).toThrow('休養中のモビモンは育成できません')
+    expect(resting.train(1, '2026-10-01').mobimon.experience).toBe(100)
+  })
+
+  it('経験値を得ても、育成しても、休養の日は変わらない', () => {
+    const resting = owned().rest('2026-10-01')
+    const { mobimon, event } = resting.gainExperience(300)
+    expect(mobimon.restUntil).toBe('2026-10-01')
+    expect(event).toMatchObject({ gainedExperience: 300, level: 4, leveledUp: true })
+  })
+})

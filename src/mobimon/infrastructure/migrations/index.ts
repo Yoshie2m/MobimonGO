@@ -6,7 +6,7 @@ import type { Migrations } from '../../../shared/VersionedStorage.ts'
  * 1つ前の版の見本を tests/fixtures/storage/mobimongo-mobimon/ に置く(CLAUDE.md の手順)。
  * 種の統合など、マスターデータの ID を置き換える移行もここに置く。
  */
-export const CURRENT_VERSION = 3
+export const CURRENT_VERSION = 4
 
 type Json = Record<string, unknown>
 
@@ -34,4 +34,17 @@ export const MIGRATIONS: Migrations = {
   },
   /** v2 → v3: 受注した仕事を追加する(組織と仕事・段階2)。v2 のデータには仕事がない。 */
   2: (data) => ({ ...(data as Json), jobs: [] }),
+  /**
+   * v3 → v4: 仕事の判定・休養・ヘッドハンティングの権利を追加する(組織と仕事・段階3)。
+   * 所持モビモンは休養なし、仕事は未判定、権利はなしとして移行する。
+   */
+  3: (data) => {
+    const v3 = data as Json & { ownedMobimons: Json[]; jobs: Json[] }
+    return {
+      ...v3,
+      ownedMobimons: v3.ownedMobimons.map((o) => ({ ...o, restUntil: null })),
+      jobs: v3.jobs.map((j) => ({ ...j, judgedAt: null })),
+      headhuntingRights: [],
+    }
+  },
 }

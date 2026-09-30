@@ -3,7 +3,13 @@ import { DomainError } from '../../shared/DomainError.ts'
 import type { IdGenerator } from '../../shared/IdGenerator.ts'
 import { localDateOf } from '../../shared/LocalDate.ts'
 import { DailyStepLog } from '../domain/DailyStepLog.ts'
-import { playerId as toPlayerId, type PlayerId } from '../domain/ids.ts'
+import {
+  drawHeadhunting,
+  drawRest,
+  headhuntingRightId,
+  type HeadhuntingRight,
+} from '../domain/Headhunting.ts'
+import { ownedMobimonId, playerId as toPlayerId, type PlayerId } from '../domain/ids.ts'
 import {
   daysBetween,
   DECLINE_LIMIT_DAYS,
@@ -12,12 +18,15 @@ import {
   type JobOffer,
   type JobPhase,
 } from '../domain/Job.ts'
+import { OwnedMobimon } from '../domain/OwnedMobimon.ts'
 import { acceptableRanks, generateJobBoard, RANK_RULES, type JobRank } from '../domain/JobRank.ts'
 import type { MobimonState } from '../domain/MobimonRepository.ts'
 import type { MobimonRepository } from '../domain/MobimonRepository.ts'
 import { TEAM_FIELDS, type TeamField, type TeamSnapshotLike } from '../domain/Organization.ts'
 import { successRate } from '../domain/SuccessRate.ts'
 import { JOB_TITLES } from '../masterData/jobTitles.ts'
+import { findSpeciesOrUnknown, SPECIES } from '../masterData/species.ts'
+import { ownedView, registerInMobidex, type CaptureResult } from './MobimonService.ts'
 import { lockedFields, lookupFor } from './OrganizationService.ts'
 
 export interface JobOfferView {
@@ -51,6 +60,28 @@ export interface ActiveJobView {
   successRate: number
   /** 辞退できないときの理由(できるなら null)。 */
   declineBlocker: string | null
+  /** 結果を見られるか(歩き切った、または納期を過ぎた)。 */
+  canJudge: boolean
+}
+
+export interface HeadhuntingRightView {
+  id: string
+  field: TeamField
+  rank: JobRank
+}
+
+export interface JudgeResult {
+  title: string
+  success: boolean
+  /** 失敗の理由(成功なら null)。 */
+  failureReason: string | null
+  successRate: number
+  /** 成功したときに経験値を得たモビモン。 */
+  experience: { name: string; gained: number; level: number; leveledUp: boolean }[]
+  /** 得たヘッドハンティングの権利の数。 */
+  headhuntingRights: number
+  /** 休養に入ったモビモン。 */
+  rested: { name: string; days: number } | null
 }
 
 export interface JobsView {
@@ -59,18 +90,27 @@ export interface JobsView {
   activeJobs: ActiveJobView[]
   /** 直近7日間に、あと何回辞退できるか。 */
   declinesLeft: number
+  /** 使っていないヘッドハンティングの権利。 */
+  headhuntingRights: HeadhuntingRightView[]
 }
 
-/** 仕事の掲示板・受注・辞退のユースケース(組織と仕事・段階2)。判定は段階3。 */
+/** 仕事の掲示板・受注・辞退・判定と、ヘッドハンティングのユースケース。 */
 export class JobService {
   private readonly repository: MobimonRepository
   private readonly clock: Clock
   private readonly ids: IdGenerator
+  private readonly random: () => number
 
-  constructor(repository: MobimonRepository, clock: Clock, ids: IdGenerator) {
+  constructor(
+    repository: MobimonRepository,
+    clock: Clock,
+    ids: IdGenerator,
+    random: () => number = Math.random,
+  ) {
     this.repository = repository
     this.clock = clock
     this.ids = ids
+    this.random = random
   }
 
   getJobs(id: string): JobsView {
@@ -90,8 +130,8 @@ export class JobService {
         title: offer.title,
         days: rule.days,
         requiredSteps: rule.requiredSteps,
-        successRate: team ? successRate(rule, strength(state, team)) : null,
-        unavailableReason: this.acceptBlocker(state, ctx, offer) ?? null,
+        successRate: team ? successRate(rule, strength(state, team, today)) : null,
+        unavailableReason: this.acceptBlocker(state, ctx, offer, today) ?? null,
       }
     })
 
@@ -100,6 +140,7 @@ export class JobService {
       const remaining = Math.max(0, job.requiredSteps - progress)
       const from = today > job.countStartDate ? today : job.countStartDate
       const daysLeft = Math.max(0, daysBetween(from, job.deadlineDate) + 1)
+      const phase = job.phase(ctx.log, today)
       return {
         id: job.id,
         field: job.field,
@@ -112,13 +153,24 @@ export class JobService {
         remaining,
         daysLeft,
         stepsPerDay: daysLeft > 0 ? Math.ceil(remaining / daysLeft) : 0,
-        phase: job.phase(ctx.log, today),
+        phase,
         successRate: job.successRate,
         declineBlocker: job.declineBlocker(now, recent) ?? null,
+        canJudge: phase !== '進行中',
       }
     })
 
-    return { today, board, activeJobs, declinesLeft: Math.max(0, 1 - recent) }
+    const headhuntingRights = state.headhuntingRights
+      .filter((h) => h.playerId === ctx.pid)
+      .map((h) => ({ id: h.id, field: h.field, rank: h.rank }))
+
+    return {
+      today,
+      board,
+      activeJobs,
+      declinesLeft: Math.max(0, 1 - recent),
+      headhuntingRights,
+    }
   }
 
   accept(id: string, offerKey: string): void {
@@ -128,7 +180,7 @@ export class JobService {
     const ctx = this.context(state, id)
     const offer = todaysBoard(today).find((o) => o.key === offerKey)
     if (!offer) throw new DomainError('この仕事は、今日の掲示板にありません')
-    const blocker = this.acceptBlocker(state, ctx, offer)
+    const blocker = this.acceptBlocker(state, ctx, offer, today)
     if (blocker) throw new DomainError(blocker)
 
     const team = ctx.organization.snapshot(offer.field)!
@@ -141,7 +193,7 @@ export class JobService {
         today,
         log: ctx.log,
         team,
-        successRate: successRate(RANK_RULES[offer.rank], strength(state, team)),
+        successRate: successRate(RANK_RULES[offer.rank], strength(state, team, today)),
       }),
     )
     this.repository.save(state)
@@ -157,13 +209,111 @@ export class JobService {
     this.repository.save(state)
   }
 
+  /**
+   * 歩き切った・納期を過ぎた仕事の結果を出す。成功ならチームの全員(休養中を除く)に経験値と、
+   * ヘッドハンティングの権利を渡す。失敗なら、メンバーから1体が休養に入ることがある。
+   */
+  judge(id: string, targetJobId: string): JudgeResult {
+    const state = this.repository.load()
+    const now = this.clock.now()
+    const today = localDateOf(now)
+    const ctx = this.context(state, id)
+    const index = state.jobs.findIndex((j) => j.id === targetJobId && j.playerId === ctx.pid)
+    if (index < 0) throw new DomainError('仕事が見つかりません')
+    const target = state.jobs[index]
+    const { job, outcome } = target.judge({ log: ctx.log, today, now, random: this.random })
+    state.jobs[index] = job
+    const rule = RANK_RULES[job.rank]
+    const owned = (oid: string) =>
+      state.ownedMobimons.findIndex((o) => o.id === oid && o.playerId === ctx.pid)
+    const nameOf = (m: OwnedMobimon) => findSpeciesOrUnknown(m.speciesId).name
+
+    const result: JudgeResult = {
+      title: job.title,
+      success: outcome.success,
+      failureReason: outcome.success ? null : outcome.reason,
+      successRate: job.successRate,
+      experience: [],
+      headhuntingRights: 0,
+      rested: null,
+    }
+
+    if (outcome.success) {
+      const team = [job.team.leader, ...job.team.subLeaders, ...job.team.members]
+      for (const oid of team) {
+        const i = owned(oid)
+        if (i < 0 || state.ownedMobimons[i].isResting(today)) continue
+        const { mobimon, event } = state.ownedMobimons[i].gainExperience(rule.experience)
+        state.ownedMobimons[i] = mobimon
+        result.experience.push({
+          name: nameOf(mobimon),
+          gained: event.gainedExperience,
+          level: event.level,
+          leveledUp: event.leveledUp,
+        })
+      }
+      for (let n = 0; n < rule.headhunts; n++) {
+        state.headhuntingRights.push({
+          id: headhuntingRightId(this.ids.next()),
+          playerId: ctx.pid,
+          field: job.field,
+          rank: job.rank,
+          grantedAt: now.toISOString(),
+        })
+      }
+      result.headhuntingRights = rule.headhunts
+    } else {
+      const rest = drawRest(
+        {
+          rank: job.rank,
+          outcome,
+          team: job.team,
+          today,
+          canRest: (oid) => {
+            const i = owned(oid)
+            return i >= 0 && !state.ownedMobimons[i].isResting(today)
+          },
+        },
+        this.random,
+      )
+      if (rest) {
+        const i = owned(rest.id)
+        state.ownedMobimons[i] = state.ownedMobimons[i].rest(rest.until)
+        result.rested = {
+          name: nameOf(state.ownedMobimons[i]),
+          days: daysBetween(today, rest.until),
+        }
+      }
+    }
+    this.repository.save(state)
+    return result
+  }
+
+  /** ヘッドハンティングの権利を1つ使い、モビモンを迎えて図鑑に登録する。 */
+  headhunt(id: string, rightId: string): CaptureResult {
+    const state = this.repository.load()
+    const pid = toPlayerId(id)
+    const index = state.headhuntingRights.findIndex((h) => h.id === rightId && h.playerId === pid)
+    if (index < 0) throw new DomainError('ヘッドハンティングの権利が見つかりません')
+    const right: HeadhuntingRight = state.headhuntingRights[index]
+    const species = drawHeadhunting(right, SPECIES, this.random)
+    state.headhuntingRights.splice(index, 1)
+    const mobimon = OwnedMobimon.capture(ownedMobimonId(this.ids.next()), pid, species.id)
+    state.ownedMobimons.push(mobimon)
+    const registration = registerInMobidex(state, pid, species)
+    this.repository.save(state)
+    return { mobimon: ownedView(mobimon), ...registration }
+  }
+
   private acceptBlocker(
     state: MobimonState,
     ctx: ReturnType<JobService['context']>,
     offer: JobOffer,
+    today: string,
   ): string | undefined {
     const team = ctx.organization.snapshot(offer.field)
     if (!team) return 'このチームにはリーダーがいません'
+    if (isResting(state, team.leader, today)) return 'リーダーが休養中です'
     const leader = ctx.lookup(team.leader)
     if (!acceptableRanks(leader?.rarity ?? null).includes(offer.rank)) {
       return `リーダーのレア度(${leader?.rarity ?? '不明'})では、${offer.rank} ランクの仕事を受けられません`
@@ -199,11 +349,17 @@ function todaysBoard(today: string): JobOffer[] {
   return generateJobBoard(today, TEAM_FIELDS, (field, rank) => JOB_TITLES[field][rank])
 }
 
-function strength(state: MobimonState, team: TeamSnapshotLike) {
+/** 成功の確率に数えるチームの状態。休養中のモビモンは数えない。 */
+function strength(state: MobimonState, team: TeamSnapshotLike, today: string) {
   const leader = state.ownedMobimons.find((o) => o.id === team.leader)
+  const active = (ids: readonly string[]) => ids.filter((oid) => !isResting(state, oid, today))
   return {
     leaderLevel: leader?.level ?? 1,
-    subLeaders: team.subLeaders.length,
-    members: team.members.length,
+    subLeaders: active(team.subLeaders).length,
+    members: active(team.members).length,
   }
+}
+
+function isResting(state: MobimonState, oid: string, today: string): boolean {
+  return state.ownedMobimons.find((o) => o.id === oid)?.isResting(today) ?? false
 }

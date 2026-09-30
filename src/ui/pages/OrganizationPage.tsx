@@ -229,6 +229,7 @@ function MemberRow({
       <FieldIcon field={member.businessField} />
       <span className="body-strong">{member.name}</span>
       <Tag>{role}</Tag>
+      {member.restingDays !== null && <Tag>休養中(あと {member.restingDays}日)</Tag>}
       <span className="caption muted">
         {member.rarity}・Lv{member.level}
       </span>

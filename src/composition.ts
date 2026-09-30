@@ -43,8 +43,8 @@ export function createApp({
   )
   const mobimonRepository = new LocalStorageMobimonRepository(storage)
   const mobimon = new MobimonService(mobimonRepository, clock, ids, random)
-  const organizationService = new OrganizationService(mobimonRepository)
-  const jobService = new JobService(mobimonRepository, clock, ids)
+  const organizationService = new OrganizationService(mobimonRepository, clock)
+  const jobService = new JobService(mobimonRepository, clock, ids, random)
 
   // 歩数リソース変換 → Mobimon は Published Language のイベントだけでつながる
   for (const type of [
@@ -102,6 +102,8 @@ export function createApp({
     getJobs: () => jobService.getJobs(userId),
     accept: (offerKey) => jobService.accept(userId, offerKey),
     decline: (jobId) => jobService.decline(userId, jobId),
+    judge: (jobId) => jobService.judge(userId, jobId),
+    headhunt: (rightId) => jobService.headhunt(userId, rightId),
   }
 
   return { events, stepImport, game, organization, jobs, userId }

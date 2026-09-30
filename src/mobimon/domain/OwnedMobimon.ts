@@ -26,17 +26,21 @@ export class OwnedMobimon {
   readonly speciesId: MobimonSpeciesId
   /** 累計経験値。 */
   readonly experience: Experience
+  /** 休養が明ける日(この日から戻る)。休養したことがなければ null。 */
+  readonly restUntil: string | null
 
   private constructor(
     id: OwnedMobimonId,
     playerId: PlayerId,
     speciesId: MobimonSpeciesId,
     exp: Experience,
+    restUntil: string | null = null,
   ) {
     this.id = id
     this.playerId = playerId
     this.speciesId = speciesId
     this.experience = exp
+    this.restUntil = restUntil
   }
 
   /** 捕獲時は Lv1・経験値 0。 */
@@ -49,23 +53,35 @@ export class OwnedMobimon {
     playerId: PlayerId,
     speciesId: MobimonSpeciesId,
     exp: number,
+    restUntil: string | null = null,
   ): OwnedMobimon {
-    return new OwnedMobimon(id, playerId, speciesId, experience(exp))
+    return new OwnedMobimon(id, playerId, speciesId, experience(exp), restUntil)
   }
 
   get level(): Level {
     return levelForExperience(this.experience)
   }
 
-  /** 経験値 100 × 倍率を得る。Lv30 では経験値が増えない。 */
-  train(expMultiplier = 1): { mobimon: OwnedMobimon; event: MobimonTrained } {
-    if (!(expMultiplier > 0)) throw new DomainError(`経験値の倍率が不正です: ${expMultiplier}`)
-    const cap = experienceToReach(MAX_LEVEL)
-    const next = Math.min(
-      cap,
-      this.experience + Math.round(EXPERIENCE_PER_TRAINING * expMultiplier),
+  /** today に休養中か(休養が明ける日の前日まで)。 */
+  isResting(today: string): boolean {
+    return this.restUntil !== null && today < this.restUntil
+  }
+
+  /** 休養に入る。until は休養が明ける日。 */
+  rest(until: string): OwnedMobimon {
+    return new OwnedMobimon(this.id, this.playerId, this.speciesId, this.experience, until)
+  }
+
+  /** 経験値を得る(仕事の成功など)。Lv30 では経験値が増えない。 */
+  gainExperience(amount: number): { mobimon: OwnedMobimon; event: MobimonTrained } {
+    const next = Math.min(experienceToReach(MAX_LEVEL), this.experience + amount)
+    const mobimon = new OwnedMobimon(
+      this.id,
+      this.playerId,
+      this.speciesId,
+      experience(next),
+      this.restUntil,
     )
-    const mobimon = new OwnedMobimon(this.id, this.playerId, this.speciesId, experience(next))
     return {
       mobimon,
       event: {
@@ -76,6 +92,15 @@ export class OwnedMobimon {
         leveledUp: mobimon.level > this.level,
       },
     }
+  }
+
+  /** 経験値 100 × 倍率を得る。Lv30 では経験値が増えない。休養中は育成できない。 */
+  train(expMultiplier = 1, today?: string): { mobimon: OwnedMobimon; event: MobimonTrained } {
+    if (!(expMultiplier > 0)) throw new DomainError(`経験値の倍率が不正です: ${expMultiplier}`)
+    if (today !== undefined && this.isResting(today)) {
+      throw new DomainError('休養中のモビモンは育成できません')
+    }
+    return this.gainExperience(Math.round(EXPERIENCE_PER_TRAINING * expMultiplier))
   }
 
   /** 条件レベルに達していて、進化先に含まれる種にだけ進化できる。レベル・経験値は引き継ぐ。 */
@@ -96,7 +121,7 @@ export class OwnedMobimon {
       )
     }
     return {
-      mobimon: new OwnedMobimon(this.id, this.playerId, to, this.experience),
+      mobimon: new OwnedMobimon(this.id, this.playerId, to, this.experience, this.restUntil),
       event: {
         type: 'MobimonEvolved',
         ownedMobimonId: this.id,

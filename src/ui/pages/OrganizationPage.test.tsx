@@ -21,6 +21,7 @@ const member = (
   rarity,
   businessField: field,
   level: 1,
+  restingDays: null,
 })
 
 const team = (overrides: Partial<TeamView> = {}): TeamView => ({

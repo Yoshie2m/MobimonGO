@@ -1,5 +1,6 @@
 import type { DailyStepLog } from './DailyStepLog.ts'
 import type { Encounter } from './Encounter.ts'
+import type { HeadhuntingRight } from './Headhunting.ts'
 import type { Inventory } from './Inventory.ts'
 import type { Job } from './Job.ts'
 import type { Mobidex } from './Mobidex.ts'
@@ -19,6 +20,7 @@ export interface MobimonState {
   organizations: Organization[]
   dailyStepLogs: DailyStepLog[]
   jobs: Job[]
+  headhuntingRights: HeadhuntingRight[]
 }
 
 export interface MobimonRepository {
@@ -36,4 +38,5 @@ export const emptyMobimonState = (): MobimonState => ({
   organizations: [],
   dailyStepLogs: [],
   jobs: [],
+  headhuntingRights: [],
 })

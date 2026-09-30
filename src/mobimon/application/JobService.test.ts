@@ -31,14 +31,14 @@ const POWERTRAIN = 'パワートレインシステム'
 const speciesOf = (rarity: string, field: string | null) =>
   SPECIES.find((s) => s.rarity === rarity && s.businessField === field && !s.retired)!
 
-function setup() {
+function setup(random: () => number = () => 0) {
   const repository = new InMemoryRepository()
   let now = new Date(2026, 8, 28, 12)
   const clock: Clock = { now: () => new Date(now) }
   const game = new MobimonService(repository, clock, sequentialIdGenerator())
   game.registerPlayer(USER)
-  const org = new OrganizationService(repository)
-  const jobs = new JobService(repository, clock, sequentialIdGenerator('job'))
+  const org = new OrganizationService(repository, clock)
+  const jobs = new JobService(repository, clock, sequentialIdGenerator('job'), random)
   const give = (rarity: string, field: string | null, level = 1) => {
     const owned = OwnedMobimon.reconstruct(
       ownedMobimonId(`o-${repository.state.ownedMobimons.length}`),
@@ -58,8 +58,8 @@ function setup() {
 }
 
 /** 超レアのリーダー(Lv20)・サブリーダー1体・メンバー2体のサーマルのチーム。 */
-function withThermalTeam() {
-  const t = setup()
+function withThermalTeam(random?: () => number) {
+  const t = setup(random)
   const leader = t.give('超レア', THERMAL, 20)
   const sub = t.give('レア', 'ホーム')
   const a = t.give('コモン', 'ホーム')
@@ -188,6 +188,112 @@ describe('JobService', () => {
       expect(jobs.getJobs(USER).activeJobs[0].declineBlocker).toBe(
         '辞退できるのは、受注から24時間以内です',
       )
+    })
+  })
+
+  describe('判定', () => {
+    /** A ランクを受注し、納期内に歩き切る(9/28〜10/1 に 20,000歩ずつ)。 */
+    const walkThrough = (t: ReturnType<typeof withThermalTeam>) => {
+      t.jobs.accept(USER, t.offer(THERMAL, 'A').key)
+      t.setNow(new Date(2026, 9, 1, 21))
+      for (const d of ['2026-09-28', '2026-09-29', '2026-09-30', '2026-10-01']) t.walk(d, 20_000)
+      return t.jobs.getJobs(USER).activeJobs[0]
+    }
+
+    it('進行中の仕事は、まだ結果を見られない', () => {
+      const t = withThermalTeam()
+      t.jobs.accept(USER, t.offer(THERMAL, 'A').key)
+      const [job] = t.jobs.getJobs(USER).activeJobs
+      expect(job.canJudge).toBe(false)
+      expect(() => t.jobs.judge(USER, job.id)).toThrow('まだ判定できません')
+    })
+
+    it('成功すると、チームの全員に経験値 300 と、ヘッドハンティングの権利2件(A ランク)が入り、チームが空く', () => {
+      const t = withThermalTeam(() => 0.74) // 成功の確率 75% の内側
+      const job = walkThrough(t)
+      expect(job.canJudge).toBe(true)
+      const result = t.jobs.judge(USER, job.id)
+      expect(result).toMatchObject({ success: true, headhuntingRights: 2, rested: null })
+      expect(result.experience).toHaveLength(4)
+      expect(result.experience.every((e) => e.gained === 300)).toBe(true)
+      const levels = t.game.listOwnedMobimon(USER).map((m) => m.level)
+      expect(levels).toEqual([20, 4, 4, 4])
+
+      const view = t.jobs.getJobs(USER)
+      expect(view.activeJobs).toEqual([])
+      expect(view.headhuntingRights).toEqual([
+        { id: expect.any(String), field: THERMAL, rank: 'A' },
+        { id: expect.any(String), field: THERMAL, rank: 'A' },
+      ])
+      expect(t.org.getOrganization(USER).teams[0].locked).toBe(false)
+      expect(() => t.jobs.judge(USER, job.id)).toThrow('進行中の仕事ではありません')
+    })
+
+    it('歩き切っても判定で外れると失敗。メンバーから1体が休養に入ることがある(リーダー・サブリーダーは入らない)', () => {
+      // 判定 0.75(外れ)→ 休養の抽選 0.05(10% の内側)→ メンバーの選択 0.99(2体目)
+      const rolls = [0.75, 0.05, 0.99]
+      const t = withThermalTeam(() => rolls.shift() ?? 0)
+      const job = walkThrough(t)
+      const result = t.jobs.judge(USER, job.id)
+      expect(result).toMatchObject({
+        success: false,
+        failureReason: '判定で失敗した',
+        experience: [],
+        headhuntingRights: 0,
+        rested: { days: 5 },
+      })
+      const owned = t.game.listOwnedMobimon(USER)
+      expect(owned.find((m) => m.id === t.b)?.restingDays).toBe(5)
+      expect(owned.filter((m) => m.restingDays != null)).toHaveLength(1)
+    })
+
+    it('納期に間に合わなければ失敗。休養中のメンバーは成功の確率に数えず、育成もできない', () => {
+      const rolls = [0.19, 0] // 休養の抽選 0.19(20% の内側)→ 1体目(サブリーダーの下のメンバー)
+      const t = withThermalTeam(() => rolls.shift() ?? 0)
+      t.jobs.accept(USER, t.offer(THERMAL, 'A').key)
+      t.setNow(new Date(2026, 9, 5, 12))
+      const [job] = t.jobs.getJobs(USER).activeJobs
+      expect(job.phase).toBe('納期切れ')
+      expect(t.jobs.judge(USER, job.id)).toMatchObject({
+        success: false,
+        failureReason: '納期に間に合わなかった',
+        rested: { days: 5 },
+      })
+      // 75% からメンバー1体分(-1%)下がる
+      expect(t.offer(THERMAL, 'A').successRate).toBe(74)
+      expect(t.org.getOrganization(USER).teams[0].directReports[0].members[0].restingDays).toBe(5)
+      t.repository.state.wallets[0] = t.repository.state.wallets[0].receiveEnergy(
+        'g' as never,
+        100 as never,
+      )
+      expect(() => t.game.train(USER, t.a)).toThrow('休養中のモビモンは育成できません')
+
+      // 休養が明けると戻る
+      t.setNow(new Date(2026, 9, 10, 12))
+      expect(t.offer(THERMAL, 'A').successRate).toBe(75)
+      expect(() => t.game.train(USER, t.a)).not.toThrow()
+    })
+  })
+
+  describe('ヘッドハンティング', () => {
+    it('権利を使うとモビモンを1体迎え、図鑑に登録し、権利が減る', () => {
+      const t = withThermalTeam(() => 0)
+      t.repository.state.headhuntingRights.push({
+        id: 'h1' as never,
+        playerId: playerId(USER),
+        field: THERMAL,
+        rank: 'C',
+        grantedAt: '2026-09-28T03:00:00.000Z',
+      })
+      const before = t.game.getMobidex(USER).registeredCount
+      // 分野 0 → 仕事の分野、レア度 0 → コモン、種 0 → 先頭
+      const result = t.jobs.headhunt(USER, 'h1')
+      expect(result.mobimon).toMatchObject({ businessField: THERMAL, rarity: 'コモン', level: 1 })
+      expect(result.newlyRegistered).toBe(true)
+      expect(t.game.getMobidex(USER).registeredCount).toBe(before + 1)
+      expect(t.game.listOwnedMobimon(USER)).toHaveLength(5)
+      expect(t.jobs.getJobs(USER).headhuntingRights).toEqual([])
+      expect(() => t.jobs.headhunt(USER, 'h1')).toThrow('ヘッドハンティングの権利が見つかりません')
     })
   })
 })

@@ -79,6 +79,7 @@ function CollectionPage({ game, onChanged }: Props) {
                 <div className="stack">
                   <div className="row">
                     <Tag>{m.rarity}</Tag>
+                    {m.restingDays != null && <Tag>休養中(あと {m.restingDays}日)</Tag>}
                     {m.team && (
                       <Tag>
                         {m.team.field}・{m.team.role}
@@ -104,7 +105,7 @@ function CollectionPage({ game, onChanged }: Props) {
                   <div className="actions">
                     <Button
                       size="small"
-                      disabled={!enough || next === null}
+                      disabled={!enough || next === null || m.restingDays != null}
                       onClick={() =>
                         run(() => {
                           const r = game.train(m.id)
@@ -135,6 +136,9 @@ function CollectionPage({ game, onChanged }: Props) {
                       </Button>
                     ))}
                   </div>
+                  {m.restingDays != null && (
+                    <p className="caption muted">休養中のため育成できません</p>
+                  )}
                   {!enough && next !== null && (
                     <p className="caption muted">エネルギーが足りないため育成できません</p>
                   )}

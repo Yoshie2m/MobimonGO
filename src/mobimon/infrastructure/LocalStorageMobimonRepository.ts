@@ -10,6 +10,7 @@ import {
   playerId,
   titleId,
 } from '../domain/ids.ts'
+import { headhuntingRightId } from '../domain/Headhunting.ts'
 import { Inventory, type ActiveEffect } from '../domain/Inventory.ts'
 import { Job, jobId, type JobStatus } from '../domain/Job.ts'
 import type { JobRank } from '../domain/JobRank.ts'
@@ -40,7 +41,13 @@ export interface Stored {
   }[]
   mobidexes: { playerId: string; registered: string[]; achievements: string[] }[]
   encounters: { id: string; playerId: string; speciesId: string; state: EncounterState }[]
-  ownedMobimons: { id: string; playerId: string; speciesId: string; experience: number }[]
+  ownedMobimons: {
+    id: string
+    playerId: string
+    speciesId: string
+    experience: number
+    restUntil: string | null
+  }[]
   organizations: {
     playerId: string
     teams: {
@@ -64,6 +71,14 @@ export interface Stored {
     team: { leader: string; subLeaders: string[]; members: string[] }
     status: JobStatus
     declinedAt: string | null
+    judgedAt: string | null
+  }[]
+  headhuntingRights: {
+    id: string
+    playerId: string
+    field: string
+    rank: JobRank
+    grantedAt: string
   }[]
 }
 
@@ -127,6 +142,7 @@ export class LocalStorageMobimonRepository implements MobimonRepository {
           playerId(o.playerId),
           mobimonSpeciesId(o.speciesId),
           o.experience,
+          o.restUntil,
         ),
       ),
       organizations: s.organizations.map((o) =>
@@ -163,6 +179,15 @@ export class LocalStorageMobimonRepository implements MobimonRepository {
             },
           }),
         ),
+      headhuntingRights: s.headhuntingRights
+        .filter((h) => isTeamField(h.field))
+        .map((h) => ({
+          id: headhuntingRightId(h.id),
+          playerId: playerId(h.playerId),
+          field: h.field as Team['field'],
+          rank: h.rank,
+          grantedAt: h.grantedAt,
+        })),
     }
   }
 
@@ -201,6 +226,7 @@ export class LocalStorageMobimonRepository implements MobimonRepository {
         playerId: o.playerId,
         speciesId: o.speciesId,
         experience: o.experience,
+        restUntil: o.restUntil,
       })),
       organizations: state.organizations.map((o) => ({
         playerId: o.playerId,
@@ -236,7 +262,9 @@ export class LocalStorageMobimonRepository implements MobimonRepository {
         },
         status: j.status,
         declinedAt: j.declinedAt,
+        judgedAt: j.judgedAt,
       })),
+      headhuntingRights: state.headhuntingRights.map((h) => ({ ...h })),
     })
   }
 }

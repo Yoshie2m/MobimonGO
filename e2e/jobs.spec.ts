@@ -73,3 +73,60 @@ test('仕事: 数日前に受けた仕事の進み具合を示す(24時間を過
   await expect(job).toContainText('辞退できるのは、受注から24時間以内です')
   await expect(job.getByRole('button')).toHaveCount(0)
 })
+
+test('仕事: 受注 → 歩数の取り込み → 結果 → ヘッドハンティング(乱数と日時を固定)', async ({
+  page,
+}) => {
+  await prepare(page, { seed: seed('mobimongo-mobimon/v2.json'), seededRandom: 1 })
+  await page.goto('/')
+  await menu(page, '仕事').click()
+  const board = page.getByRole('region', { name: `${THERMAL}の仕事` })
+  await board
+    .locator('.team-member')
+    .filter({ hasText: 'A ランク' })
+    .getByRole('button', { name: '受注する' })
+    .click()
+
+  // 4日後の夜に、それまでの歩数を取り込む(1日 20,000歩 × 4日 = 80,000歩)
+  await page.clock.setFixedTime(new Date('2026-10-01T20:00:00+09:00'))
+  for (const date of [TODAY, '2026-09-29', '2026-09-30', '2026-10-01']) {
+    await importManually(page, date, '20,000')
+  }
+  await menu(page, '仕事').click()
+  const job = page.getByRole('region', { name: /^受けている仕事: / })
+  await expect(job).toContainText('歩き切りました')
+  await job.getByRole('button', { name: '結果を見る' }).click()
+
+  const result = page.getByRole('region', { name: '仕事の結果' })
+  await expect(result).toContainText('仕事に成功しました')
+  await expect(result).toContainText('ゼンネツオウ: 経験値 ▲ 300')
+  await expect(result).toContainText('ヘッドハンティングの権利を 2件')
+  await expect(page.getByText('受けている仕事はありません')).toBeVisible()
+
+  await expect(page.getByText('ヘッドハンティングの権利 2件')).toBeVisible()
+  await page.getByRole('button', { name: '迎える' }).first().click()
+  await expect(page.getByText(/を迎えました/)).toBeVisible()
+  await expect(page.getByText('ヘッドハンティングの権利 1件')).toBeVisible()
+
+  // 迎えたモビモンはなかまに加わる(見本は6体)
+  await menu(page, 'なかま').click()
+  await expect(page.getByRole('button', { name: '育てる' })).toHaveCount(7)
+})
+
+test('仕事: 見本(v4)の歩き切った仕事の結果を見られ、休養中のなかまは育成できない', async ({
+  page,
+}) => {
+  await prepare(page, { seed: seed('mobimongo-mobimon/v4.json'), seededRandom: 1 })
+  await page.goto('/')
+  await menu(page, '仕事').click()
+  await expect(page.getByText('ヘッドハンティングの権利 1件')).toBeVisible()
+  const job = page.getByRole('region', { name: '受けている仕事: 電気自動車の熱をまとめて管理する' })
+  await expect(job).toContainText('70,000 / 70,000歩')
+  await job.getByRole('button', { name: '結果を見る' }).click()
+  await expect(page.getByRole('region', { name: '仕事の結果' })).toBeVisible()
+
+  await menu(page, 'なかま').click()
+  const resting = page.locator('.mm-card').filter({ hasText: 'スズカゼン' })
+  await expect(resting).toContainText('休養中(あと 3日)')
+  await expect(resting.getByRole('button', { name: '育てる' })).toBeDisabled()
+})

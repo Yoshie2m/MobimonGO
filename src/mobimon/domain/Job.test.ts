@@ -95,6 +95,37 @@ describe('Job', () => {
   })
 })
 
+describe('Job.judge', () => {
+  const walked = DailyStepLog.create(PLAYER).record('2026-09-28', 20_000)
+  const judge = (log: DailyStepLog, today: string, random = () => 0) =>
+    accept().judge({ log, today, now: new Date(2026, 9, 1, 12), random })
+
+  it('歩き切ったら、受注したときの成功の確率(85%)で判定する。納期の前でも判定できる', () => {
+    expect(judge(walked, '2026-09-28', () => 0.849).outcome).toEqual({ success: true })
+    const { job, outcome } = judge(walked, '2026-09-28', () => 0.85)
+    expect(outcome).toEqual({ success: false, reason: '判定で失敗した' })
+    expect(job.status).toBe('失敗')
+    expect(job.judgedAt).not.toBeNull()
+  })
+
+  it('納期までに歩き切れなければ失敗(確率は使わない)', () => {
+    const log = DailyStepLog.create(PLAYER).record('2026-09-28', 19_999)
+    expect(judge(log, '2026-10-01').outcome).toEqual({
+      success: false,
+      reason: '納期に間に合わなかった',
+    })
+  })
+
+  it('まだ進行中なら判定できない。判定は1回だけ', () => {
+    expect(() => judge(DailyStepLog.create(PLAYER), '2026-09-30')).toThrow('まだ判定できません')
+    const { job } = judge(walked, '2026-09-28')
+    expect(job.status).toBe('成功')
+    expect(() =>
+      job.judge({ log: walked, today: '2026-09-28', now: new Date(), random: () => 0 }),
+    ).toThrow('進行中の仕事ではありません')
+  })
+})
+
 describe('successRate', () => {
   it('アンコモンのリーダー(Lv10)+ メンバー4体で B ランク → 81%', () => {
     expect(successRate(RANK_RULES.B, { leaderLevel: 10, subLeaders: 0, members: 4 })).toBe(81)

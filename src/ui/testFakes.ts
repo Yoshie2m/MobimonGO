@@ -114,12 +114,24 @@ export const fakeOrganization = (
   ...overrides,
 })
 
-const emptyJobs: JobsView = { today: '2026-09-28', board: [], activeJobs: [], declinesLeft: 1 }
+const emptyJobs: JobsView = {
+  today: '2026-09-28',
+  board: [],
+  activeJobs: [],
+  declinesLeft: 1,
+  headhuntingRights: [],
+}
 
 /** 画面のテスト用の、仕事の操作の偽物。 */
 export const fakeJobs = (overrides: Partial<JobUseCases> = {}): JobUseCases => ({
   getJobs: () => emptyJobs,
   accept: () => {},
   decline: () => {},
+  judge: () => {
+    throw new Error('not implemented')
+  },
+  headhunt: () => {
+    throw new Error('not implemented')
+  },
   ...overrides,
 })
